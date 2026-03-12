@@ -1,0 +1,31 @@
+services:
+  telegram-mock-ai:
+    build: .
+    container_name: telegram-mock-ai
+    ports:
+      - "8081:8081"   # Bot API
+      - "8082:8082"   # Admin API
+    volumes:
+      - ./config.yaml:/etc/telegram-mock-ai/config.yaml:ro
+    environment:
+      - TELEGRAM_MOCK_LLM_BASE_URL=http://ollama:11434/v1
+      - TELEGRAM_MOCK_LLM_MODEL=llama3
+      - TELEGRAM_MOCK_LLM_ENABLED=true
+      - TELEGRAM_MOCK_PROACTIVE_ENABLED=false
+      - TELEGRAM_MOCK_LOG_LEVEL=info
+    depends_on:
+      ollama:
+        condition: service_started
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

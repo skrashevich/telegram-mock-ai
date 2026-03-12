@@ -1,0 +1,8 @@
+.git
+.omc
+.gitignore
+.dockerignore
+*.md
+Makefile
+telegram-mock-ai
+config.yaml

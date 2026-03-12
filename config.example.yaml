@@ -1,0 +1,74 @@
+server:
+  host: "0.0.0.0"
+  port: 8081
+  read_timeout: 60s
+  write_timeout: 60s
+
+llm:
+  enabled: true
+  base_url: "http://localhost:11434/v1"   # Ollama, LM Studio, OpenAI, etc.
+  api_key: ""                              # Set via TELEGRAM_MOCK_LLM_API_KEY env var
+  model: "gpt-4o-mini"
+  temperature: 0.8
+  max_tokens: 512
+  timeout: 30s
+  response_delay_min: 500ms
+  response_delay_max: 3s
+  # system_prompt: "Custom system prompt for simulated users"
+
+proactive:
+  enabled: false
+  interval_min: 10s
+  interval_max: 60s
+  event_types:
+    - message
+  scenarios:
+    - type: user_message
+      weight: 0.6
+    - type: new_member
+      weight: 0.1
+    - type: member_left
+      weight: 0.05
+    - type: photo_message
+      weight: 0.15
+    - type: sticker_message
+      weight: 0.1
+
+webhook:
+  max_retries: 3
+  retry_delay: 1s
+  timeout: 10s
+
+seed:
+  users:
+    - id: 1001
+      first_name: "Alice"
+      username: "alice"
+    - id: 1002
+      first_name: "Bob"
+      last_name: "Smith"
+      username: "bob_smith"
+    - id: 1003
+      first_name: "Charlie"
+      username: "charlie"
+  chats:
+    - id: -1001
+      type: "group"
+      title: "Test Group"
+      members: [1001, 1002, 1003]
+    - id: -1002
+      type: "supergroup"
+      title: "Development Chat"
+      members: [1001, 1002]
+  bots:
+    - token: "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+      username: "test_bot"
+      first_name: "Test Bot"
+
+log:
+  level: "info"        # debug, info, warn, error
+  format: "text"       # text or json
+
+admin:
+  enabled: true
+  port: 8082
