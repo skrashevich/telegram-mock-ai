@@ -6,7 +6,8 @@ server:
 
 llm:
   enabled: true
-  base_url: "http://localhost:11434/v1"   # Ollama, LM Studio, OpenAI, etc.
+  api_type: "openai"                       # "openai" (default) or "anthropic"
+  base_url: "http://localhost:11434/v1"    # Ollama, LM Studio, OpenAI, etc.
   api_key: ""                              # Set via TELEGRAM_MOCK_LLM_API_KEY env var
   model: "gpt-4o-mini"
   temperature: 0.8
@@ -15,6 +16,12 @@ llm:
   response_delay_min: 500ms
   response_delay_max: 3s
   # system_prompt: "Custom system prompt for simulated users"
+
+  # Anthropic example:
+  # api_type: "anthropic"
+  # base_url: "http://169.254.169.252/gateway/llm/anthropic/v1"
+  # model: "claude-sonnet-4-5-20250929"
+  # max_tokens: 1024
 
 proactive:
   enabled: false
@@ -40,6 +47,16 @@ webhook:
   timeout: 10s
 
 seed:
+  # LLM-powered seed generation (auto-creates realistic users, groups, channels)
+  generate:
+    enabled: false              # Set to true to auto-generate seed data via LLM on startup
+    users_count: 10             # Number of users to generate
+    groups_count: 3             # Number of group chats
+    channels_count: 1           # Number of channels
+    locale: "ru"                # Language for names/titles: "ru", "en", "mixed", etc.
+    max_retries: 2              # LLM call retry attempts
+
+  # Manual seed data (always applied, works alongside generated data)
   users:
     - id: 1001
       first_name: "Alice"

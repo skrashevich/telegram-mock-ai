@@ -29,16 +29,17 @@ type ServerConfig struct {
 
 // LLMConfig holds LLM integration settings.
 type LLMConfig struct {
-	Enabled         bool          `yaml:"enabled"`
-	BaseURL         string        `yaml:"base_url"`
-	APIKey          string        `yaml:"api_key"`
-	Model           string        `yaml:"model"`
-	Temperature     float64       `yaml:"temperature"`
-	MaxTokens       int           `yaml:"max_tokens"`
-	Timeout         time.Duration `yaml:"timeout"`
+	Enabled          bool          `yaml:"enabled"`
+	APIType          string        `yaml:"api_type"` // "openai" (default) or "anthropic"
+	BaseURL          string        `yaml:"base_url"`
+	APIKey           string        `yaml:"api_key"`
+	Model            string        `yaml:"model"`
+	Temperature      float64       `yaml:"temperature"`
+	MaxTokens        int           `yaml:"max_tokens"`
+	Timeout          time.Duration `yaml:"timeout"`
 	ResponseDelayMin time.Duration `yaml:"response_delay_min"`
 	ResponseDelayMax time.Duration `yaml:"response_delay_max"`
-	SystemPrompt    string        `yaml:"system_prompt"`
+	SystemPrompt     string        `yaml:"system_prompt"`
 }
 
 // ProactiveConfig holds proactive event generation settings.
@@ -65,9 +66,20 @@ type WebhookConfig struct {
 
 // SeedConfig holds initial data for the mock server.
 type SeedConfig struct {
-	Users []SeedUser `yaml:"users"`
-	Chats []SeedChat `yaml:"chats"`
-	Bots  []SeedBot  `yaml:"bots"`
+	Users    []SeedUser    `yaml:"users"`
+	Chats    []SeedChat    `yaml:"chats"`
+	Bots     []SeedBot     `yaml:"bots"`
+	Generate *SeedGenerate `yaml:"generate,omitempty"`
+}
+
+// SeedGenerate controls LLM-powered seed data generation.
+type SeedGenerate struct {
+	Enabled       bool   `yaml:"enabled"`
+	UsersCount    int    `yaml:"users_count"`
+	GroupsCount   int    `yaml:"groups_count"`
+	ChannelsCount int    `yaml:"channels_count"`
+	Locale        string `yaml:"locale"`
+	MaxRetries    int    `yaml:"max_retries"`
 }
 
 // SeedUser defines a pre-created user.
@@ -197,6 +209,9 @@ func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("TELEGRAM_MOCK_LLM_ENABLED"); v != "" {
 		cfg.LLM.Enabled = v == "true" || v == "1"
 	}
+	if v := os.Getenv("TELEGRAM_MOCK_LLM_API_TYPE"); v != "" {
+		cfg.LLM.APIType = v
+	}
 	if v := os.Getenv("TELEGRAM_MOCK_PROACTIVE_ENABLED"); v != "" {
 		cfg.Proactive.Enabled = v == "true" || v == "1"
 	}
@@ -207,5 +222,11 @@ func applyEnvOverrides(cfg *Config) {
 		if port, err := strconv.Atoi(v); err == nil {
 			cfg.Admin.Port = port
 		}
+	}
+	if v := os.Getenv("TELEGRAM_MOCK_SEED_GENERATE_ENABLED"); v != "" {
+		if cfg.Seed.Generate == nil {
+			cfg.Seed.Generate = &SeedGenerate{}
+		}
+		cfg.Seed.Generate.Enabled = v == "true" || v == "1"
 	}
 }
