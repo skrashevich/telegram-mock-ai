@@ -44,11 +44,13 @@ type LLMConfig struct {
 
 // ProactiveConfig holds proactive event generation settings.
 type ProactiveConfig struct {
-	Enabled     bool          `yaml:"enabled"`
-	IntervalMin time.Duration `yaml:"interval_min"`
-	IntervalMax time.Duration `yaml:"interval_max"`
-	EventTypes  []string      `yaml:"event_types"`
-	Scenarios   []ScenarioConfig `yaml:"scenarios"`
+	Enabled      bool             `yaml:"enabled"`
+	IntervalMin  time.Duration    `yaml:"interval_min"`
+	IntervalMax  time.Duration    `yaml:"interval_max"`
+	EventTypes   []string         `yaml:"event_types"`
+	Scenarios    []ScenarioConfig `yaml:"scenarios"`
+	Style        string           `yaml:"style"`         // "normal", "spam", "toxic", "flood", "mixed" or custom name
+	CustomPrompt string           `yaml:"custom_prompt"` // free-form instruction overriding style presets
 }
 
 // ScenarioConfig defines a proactive event scenario.

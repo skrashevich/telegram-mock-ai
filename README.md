@@ -58,7 +58,7 @@ make run
 
 ## Подключение бота
 
-Замените базовый URL Telegram API на адрес mock-сервера. Токен может быть любым — сервер автоматически зарегистрирует бота при первом обращении.
+Замените базовый URL Telegram API на адрес mock-сервера. Токен может быть любым — сервер автоматически зарегистрирует бота при первом обращении и **добавит его во все существующие чаты**.
 
 ### Python (python-telegram-bot)
 
@@ -163,14 +163,71 @@ curl -X POST http://localhost:8082/api/chats/-1001/messages \
 
 ### Проактивный режим
 
-Сервер может сам генерировать поток событий — сообщения, вход/выход участников, фото, стикеры — с настраиваемой частотой:
+Сервер может сам генерировать поток событий — сообщения, вход/выход участников, фото, стикеры — с настраиваемой частотой и **стилем контента**:
 
 ```yaml
 proactive:
   enabled: true
   interval_min: 10s
   interval_max: 60s
+  style: "normal"        # стиль генерируемых сообщений
 ```
+
+#### Стили сообщений
+
+Параметр `style` задаёт характер генерируемого контента — полезно при тестировании модерационных ботов:
+
+| Стиль | Описание | Пример использования |
+|---|---|---|
+| `normal` | Обычные разговорные сообщения (по умолчанию) | Общее тестирование |
+| `spam` | Крипто-скамы, фейковые розыгрыши, подозрительные ссылки | Тестирование антиспам-бота |
+| `toxic` | Мат, оскорбления, hate speech | Тестирование антимат-бота |
+| `flood` | Повторы символов, emoji-спам, КАПС, бессмысленные последовательности | Тестирование антифлуд-бота |
+| `mixed` | Случайный микс: 40% normal, 20% spam, 20% toxic, 20% flood | Комплексное тестирование модерации |
+
+#### Произвольный промпт
+
+Если встроенных пресетов недостаточно, `custom_prompt` позволяет задать любую инструкцию для LLM. Он имеет приоритет над `style`:
+
+```yaml
+proactive:
+  enabled: true
+  interval_min: 5s
+  interval_max: 30s
+  custom_prompt: "Генерируй сообщения с рекламой онлайн-казино и ставок на спорт. Используй типичные приёмы: обещания лёгких денег, фейковые отзывы, ссылки вида casino-xyz.com"
+```
+
+Ещё примеры `custom_prompt`:
+- `"Генерируй сообщения на украинском языке с обсуждением новостей"` — тестирование мультиязычности
+- `"Пиши очень длинные сообщения по 500+ символов с цитатами и ссылками"` — тестирование лимитов
+- `"Чередуй нормальные сообщения с попытками фишинга: просьбы перейти по ссылке, ввести пароль"` — тестирование антифишинга
+
+### Скачивание файлов
+
+Mock-сервер полностью эмулирует работу с файлами через `getFile` + endpoint скачивания, генерируя placeholder-контент на лету:
+
+```bash
+# 1. Получить file_path по file_id
+curl http://localhost:8081/botYOUR_TOKEN/getFile?file_id=AgACAgIAAxkBAAI...
+
+# Ответ: {"ok":true,"result":{"file_id":"...","file_path":"photos/file_abc123.jpg"}}
+
+# 2. Скачать файл по file_path
+curl http://localhost:8081/file/botYOUR_TOKEN/photos/file_abc123.jpg -o photo.jpg
+```
+
+Тип placeholder определяется автоматически по префиксу `file_id`:
+
+| Префикс file_id | Тип | Формат | Размер |
+|---|---|---|---|
+| `AgAC...` | Фото | JPEG (градиент + фигура) | 800×600 |
+| `CAAC...` | Стикер | WebP (прозрачный фон, emoji-like) | 512×512 |
+| `BAADAgAD...` | Видео | JPEG (превью-кадр) | 640×480 |
+| `BQAC...` | Документ | Stub PDF | — |
+| `CQACAgIAAxkBAAI...` | Аудио | Stub MP3 | — |
+| `DQAC...` | Голосовое | Stub OGG | — |
+
+Фото и стикеры — полноценные изображения с уникальным паттерном, сгенерированным из хеша file_path (каждый file_id даёт визуально отличающуюся картинку).
 
 ---
 
@@ -250,6 +307,8 @@ proactive:
   enabled: false
   interval_min: 10s
   interval_max: 60s
+  style: "normal"                   # "normal", "spam", "toxic", "flood", "mixed"
+  # custom_prompt: "..."            # Произвольная инструкция (приоритет над style)
   scenarios:
     - type: user_message
       weight: 0.6
@@ -378,7 +437,7 @@ curl -X POST http://localhost:8082/api/bots/YOUR_TOKEN/updates \
 
 ## Реализованные методы Bot API
 
-27 методов, покрывающих основные сценарии работы ботов:
+28 методов, покрывающих основные сценарии работы ботов:
 
 | Категория | Методы |
 |---|---|
@@ -386,6 +445,7 @@ curl -X POST http://localhost:8082/api/bots/YOUR_TOKEN/updates \
 | Обновления | `getUpdates`, `setWebhook`, `deleteWebhook`, `getWebhookInfo` |
 | Сообщения | `sendMessage`, `editMessageText`, `editMessageReplyMarkup`, `deleteMessage`, `forwardMessage`, `copyMessage`, `answerCallbackQuery` |
 | Медиа | `sendPhoto`, `sendDocument`, `sendVideo`, `sendAudio`, `sendVoice`, `sendSticker`, `sendAnimation`, `sendLocation` |
+| Файлы | `getFile` + endpoint скачивания `/file/bot{token}/{path}` |
 | Управление чатом | `banChatMember`, `unbanChatMember`, `restrictChatMember`, `promoteChatMember`, `leaveChat` |
 
 ---
@@ -409,7 +469,8 @@ internal/
 
 ```
 Бот → POST /bot{token}/sendMessage → state → [async LLM ответ] → очередь/webhook → Бот
-Проактивный движок → таймер → сценарий → LLM → обновление → Бот
+Бот → getFile(file_id) → file_path → GET /file/bot{token}/{path} → placeholder JPEG/WebP/stub
+Проактивный движок → таймер → сценарий → LLM (style/custom_prompt) → обновление → Бот
 Admin API → POST /api/seed/generate → LLM → users + chats в state
 ```
 

@@ -27,6 +27,15 @@ proactive:
   enabled: false
   interval_min: 10s
   interval_max: 60s
+  # Message style preset: "normal", "spam", "toxic", "flood", "mixed"
+  # - normal: natural conversational messages (default)
+  # - spam: crypto scams, fake giveaways, suspicious links
+  # - toxic: profanity, insults, hate speech (for anti-toxicity bot testing)
+  # - flood: repeated chars, emoji spam, ALL CAPS (for anti-flood bot testing)
+  # - mixed: random mix of all styles
+  style: "mixed"
+  # Free-form prompt override (takes priority over style preset):
+  # custom_prompt: "Generate messages containing casino ads and betting links"
   event_types:
     - message
   scenarios:

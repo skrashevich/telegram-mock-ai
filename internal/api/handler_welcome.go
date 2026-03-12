@@ -62,7 +62,7 @@ func (s *Server) sendWelcomeToChat(b *bot.Bot, chat models.Chat) {
 			}
 		}
 
-		prompt := llm.ProactiveMessagePrompt(sender.FirstName, chat.Title, recentContext)
+		prompt := llm.ProactiveMessagePrompt(sender.FirstName, chat.Title, recentContext, s.cfg.Proactive.Style, s.cfg.Proactive.CustomPrompt)
 		if generated, err := s.llm.Complete(ctx, []llm.ChatMessage{
 			{Role: "system", Content: prompt},
 			{Role: "user", Content: "Generate a message."},

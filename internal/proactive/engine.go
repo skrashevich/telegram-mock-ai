@@ -153,7 +153,7 @@ func (e *Engine) generateMessage(ctx context.Context, b *bot.Bot, chat models.Ch
 		}
 	}
 
-	prompt := llm.ProactiveMessagePrompt(sender.FirstName, chat.Title, recentContext)
+	prompt := llm.ProactiveMessagePrompt(sender.FirstName, chat.Title, recentContext, e.cfg.Style, e.cfg.CustomPrompt)
 
 	llmCtx, cancel := context.WithTimeout(ctx, e.llmTimeout)
 	defer cancel()
@@ -228,7 +228,7 @@ func (e *Engine) generateMemberLeft(ctx context.Context, b *bot.Bot, chat models
 func (e *Engine) generatePhotoMessage(ctx context.Context, b *bot.Bot, chat models.Chat, members []models.ChatMember) {
 	sender := members[rand.Intn(len(members))].User
 
-	prompt := llm.ProactiveMessagePrompt(sender.FirstName, chat.Title, "")
+	prompt := llm.ProactiveMessagePrompt(sender.FirstName, chat.Title, "", e.cfg.Style, e.cfg.CustomPrompt)
 
 	llmCtx, cancel := context.WithTimeout(ctx, e.llmTimeout)
 	defer cancel()
