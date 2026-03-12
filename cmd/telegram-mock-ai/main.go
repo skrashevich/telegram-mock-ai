@@ -172,7 +172,7 @@ func seedData(cfg *config.Config, store *state.Store, registry *bot.Registry, ll
 	}
 
 	// Seed chats
-	for _, sc := range cfg.Seed.Chats {
+	for i, sc := range cfg.Seed.Chats {
 		store.CreateChat(models.Chat{
 			ID:    sc.ID,
 			Type:  sc.Type,
@@ -181,9 +181,14 @@ func seedData(cfg *config.Config, store *state.Store, registry *bot.Registry, ll
 		for _, uid := range sc.Members {
 			store.AddChatMember(sc.ID, uid, "member")
 		}
-		// Also add all bots to each seeded chat
+		// Add all bots to each seeded chat.
+		// First chat gets bots as administrators.
+		botStatus := "member"
+		if i == 0 {
+			botStatus = "administrator"
+		}
 		for _, b := range registry.List() {
-			store.AddChatMember(sc.ID, b.User.ID, "member")
+			store.AddChatMember(sc.ID, b.User.ID, botStatus)
 		}
 		slog.Debug("seeded chat", "id", sc.ID, "title", sc.Title, "members", len(sc.Members))
 	}

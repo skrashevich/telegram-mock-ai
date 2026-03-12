@@ -16,6 +16,7 @@ type Bot struct {
 	WebhookURL     string
 	SecretToken    string
 	AllowedUpdates []string
+	connected      bool // tracks whether the bot has made its first API call
 }
 
 // Registry manages registered bots by their token.
@@ -124,6 +125,21 @@ func (r *Registry) SetWebhook(token, url, secretToken string, allowedUpdates []s
 	b.WebhookURL = url
 	b.SecretToken = secretToken
 	b.AllowedUpdates = allowedUpdates
+	return true
+}
+
+// MarkConnected marks the bot as connected. Returns true if this was the first connection.
+func (r *Registry) MarkConnected(token string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	b, ok := r.bots[token]
+	if !ok {
+		return false
+	}
+	if b.connected {
+		return false
+	}
+	b.connected = true
 	return true
 }
 

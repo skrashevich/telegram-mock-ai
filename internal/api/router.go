@@ -122,6 +122,11 @@ func (s *Server) handleBotRequest(w http.ResponseWriter, r *http.Request) {
 		s.store.CreateUser(b.User)
 	}
 
+	// On first connection, trigger welcome messages
+	if s.registry.MarkConnected(token) {
+		go s.sendWelcomeMessages(b)
+	}
+
 	methodLower := strings.ToLower(method)
 	handler, ok := s.handlers[methodLower]
 	if !ok {

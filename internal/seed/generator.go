@@ -166,6 +166,7 @@ func (g *Generator) materialize(parsed *llmSeedResponse) *GenerateResult {
 	}
 
 	// Helper to create a chat and add members + bots
+	firstChat := true
 	createChat := func(lc llmChat, chatType string) {
 		chat := g.store.CreateChat(models.Chat{
 			Type:  chatType,
@@ -176,9 +177,15 @@ func (g *Generator) materialize(parsed *llmSeedResponse) *GenerateResult {
 			g.store.AddChatMember(chat.ID, createdUsers[idx].ID, "member")
 		}
 
-		// Add all registered bots to the chat (matches existing seedData behavior)
+		// Add all registered bots to the chat.
+		// First chat gets bots as administrators so they have full access.
+		botStatus := "member"
+		if firstChat {
+			botStatus = "administrator"
+			firstChat = false
+		}
 		for _, b := range g.registry.List() {
-			g.store.AddChatMember(chat.ID, b.User.ID, "member")
+			g.store.AddChatMember(chat.ID, b.User.ID, botStatus)
 		}
 
 		result.Chats = append(result.Chats, *chat)
