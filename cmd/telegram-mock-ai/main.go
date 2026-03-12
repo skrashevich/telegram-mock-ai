@@ -165,8 +165,10 @@ func seedData(cfg *config.Config, store *state.Store, registry *bot.Registry, ll
 
 	// Seed bots
 	for _, sb := range cfg.Seed.Bots {
-		registry.Register(sb.Token, sb.Username, sb.FirstName)
-		slog.Debug("seeded bot", "token", sb.Token[:min(10, len(sb.Token))]+"...", "username", sb.Username)
+		b := registry.Register(sb.Token, sb.Username, sb.FirstName)
+		// Also add bot as a user in the store so AddChatMember can find it
+		store.CreateUser(b.User)
+		slog.Debug("seeded bot", "token", sb.Token[:min(10, len(sb.Token))]+"...", "username", sb.Username, "id", b.User.ID)
 	}
 
 	// Seed chats

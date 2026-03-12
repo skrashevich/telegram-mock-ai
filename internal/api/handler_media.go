@@ -31,10 +31,10 @@ func (s *Server) handleSendMedia(w http.ResponseWriter, r *http.Request, b *bot.
 	fileUniqueID := "AQADAgAT" + models.RandomHex(8)
 
 	msg := models.Message{
-		From: &b.User,
-		Chat: *chat,
-		Date: time.Now().Unix(),
-		Text: caption,
+		From:    &b.User,
+		Chat:    *chat,
+		Date:    time.Now().Unix(),
+		Caption: caption,
 	}
 
 	// Determine media type from the URL path (case-insensitive)

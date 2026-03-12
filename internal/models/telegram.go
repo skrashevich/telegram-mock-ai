@@ -28,6 +28,7 @@ type Message struct {
 	Chat            Chat             `json:"chat"`
 	Date            int64            `json:"date"`
 	Text            string           `json:"text,omitempty"`
+	Caption         string           `json:"caption,omitempty"`
 	Entities        []MessageEntity  `json:"entities,omitempty"`
 	ReplyToMessage  *Message         `json:"reply_to_message,omitempty"`
 	Photo           []PhotoSize      `json:"photo,omitempty"`

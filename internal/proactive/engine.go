@@ -242,10 +242,10 @@ func (e *Engine) generatePhotoMessage(ctx context.Context, b *bot.Bot, chat mode
 	fileUniqueID := "AQADAgAT" + models.RandomHex(8)
 
 	msg := e.store.StoreMessage(models.Message{
-		From: &sender,
-		Chat: chat,
-		Date: time.Now().Unix(),
-		Text: caption,
+		From:    &sender,
+		Chat:    chat,
+		Date:    time.Now().Unix(),
+		Caption: caption,
 		Photo: []models.PhotoSize{
 			{FileID: fileID, FileUniqueID: fileUniqueID, Width: 1280, Height: 960},
 			{FileID: fileID + "_s", FileUniqueID: fileUniqueID + "_s", Width: 320, Height: 240},
