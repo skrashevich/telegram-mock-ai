@@ -1,3 +1,7 @@
+github.com/skrashevich/go-webp v0.1.0 h1:C+dtldBorS5ISATYR5mvG9HFj8GRLDGRywT0xs/ZLUQ=
+github.com/skrashevich/go-webp v0.1.0/go.mod h1:9QtuNP/H9q/qzqgaZeYalNIk7n5lfyqVs1WTaPtC/Ao=
+golang.org/x/image v0.36.0 h1:Iknbfm1afbgtwPTmHnS2gTM/6PPZfH+z2EFuOkSbqwc=
+golang.org/x/image v0.36.0/go.mod h1:YsWD2TyyGKiIX1kZlu9QfKIsQ4nAAK9bdgdrIsE7xy4=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=

@@ -55,6 +55,7 @@ func (e *Engine) Run(ctx context.Context) {
 		timer := time.NewTimer(delay)
 		select {
 		case <-timer.C:
+			slog.Debug("proactive: tick firing", "delay", delay)
 			e.tick(ctx)
 		case <-ctx.Done():
 			timer.Stop()
@@ -76,6 +77,7 @@ func (e *Engine) randomDelay() time.Duration {
 func (e *Engine) tick(ctx context.Context) {
 	bots := e.registry.List()
 	if len(bots) == 0 {
+		slog.Debug("proactive tick: no bots registered")
 		return
 	}
 
@@ -85,6 +87,7 @@ func (e *Engine) tick(ctx context.Context) {
 	// Get chats where this bot is a member
 	botChats := e.store.GetUserChats(b.User.ID)
 	if len(botChats) == 0 {
+		slog.Debug("proactive tick: bot has no chats", "bot", b.User.Username, "bot_id", b.User.ID)
 		return
 	}
 

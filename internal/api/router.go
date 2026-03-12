@@ -62,6 +62,8 @@ func NewServer(cfg *config.Config, store *state.Store, registry *bot.Registry, d
 		"sendsticker":   s.handleSendMedia,
 		"sendanimation": s.handleSendMedia,
 		"sendlocation":  s.handleSendLocation,
+		// Files
+		"getfile": s.handleGetFile,
 		// Callbacks
 		"answercallbackquery": s.handleAnswerCallbackQuery,
 		// Chat management
@@ -82,6 +84,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/bot", func(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusNotFound, "Not Found: use /bot<token>/<method>")
 	})
+	// File download: /file/bot{token}/{file_path}
+	mux.HandleFunc("/file/", s.handleFileDownload)
 	// Catch-all pattern for /bot{token}/{method}
 	mux.HandleFunc("/", s.handleBotRequest)
 	return mux
@@ -117,9 +121,13 @@ func (s *Server) handleBotRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ensure the bot user exists in state
+	// Ensure the bot user exists in state and is added to all chats
 	if _, exists := s.store.GetUser(b.User.ID); !exists {
 		s.store.CreateUser(b.User)
+		// Add newly registered bot to all existing chats
+		for _, chat := range s.store.ListChats() {
+			s.store.AddChatMember(chat.ID, b.User.ID, "member")
+		}
 	}
 
 	// On first connection, trigger welcome messages
