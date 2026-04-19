@@ -1,5 +1,12 @@
 # telegram-mock-ai
 
+<!-- badges:start -->
+[![GitHub stars](https://img.shields.io/github/stars/skrashevich/telegram-mock-ai?style=flat-square)](https://github.com/skrashevich/telegram-mock-ai/stargazers)
+[![Last commit](https://img.shields.io/github/last-commit/skrashevich/telegram-mock-ai?style=flat-square)](https://github.com/skrashevich/telegram-mock-ai/commits/main)
+[![License](https://img.shields.io/github/license/skrashevich/telegram-mock-ai?style=flat-square)](https://github.com/skrashevich/telegram-mock-ai/blob/main/LICENSE)
+<!-- badges:end -->
+
+
 Mock-сервер Telegram Bot API с генерацией ответов через LLM. Эмулирует `api.telegram.org` — бот подключается к нему вместо реального Telegram и работает с виртуальными пользователями, чатами и сообщениями.
 
 Зачем это нужно:
