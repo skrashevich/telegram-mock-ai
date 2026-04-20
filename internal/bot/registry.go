@@ -16,7 +16,35 @@ type Bot struct {
 	WebhookURL     string
 	SecretToken    string
 	AllowedUpdates []string
+	commandsMu     sync.RWMutex
+	commands       []models.BotCommand
 	connected      bool // tracks whether the bot has made its first API call
+}
+
+// SetCommands stores bot commands thread-safely.
+func (b *Bot) SetCommands(cmds []models.BotCommand) {
+	b.commandsMu.Lock()
+	defer b.commandsMu.Unlock()
+	b.commands = cmds
+}
+
+// GetCommands returns bot commands thread-safely.
+func (b *Bot) GetCommands() []models.BotCommand {
+	b.commandsMu.RLock()
+	defer b.commandsMu.RUnlock()
+	if b.commands == nil {
+		return []models.BotCommand{}
+	}
+	result := make([]models.BotCommand, len(b.commands))
+	copy(result, b.commands)
+	return result
+}
+
+// DeleteCommands clears bot commands thread-safely.
+func (b *Bot) DeleteCommands() {
+	b.commandsMu.Lock()
+	defer b.commandsMu.Unlock()
+	b.commands = nil
 }
 
 // Registry manages registered bots by their token.

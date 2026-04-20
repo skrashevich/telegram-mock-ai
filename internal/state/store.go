@@ -351,6 +351,18 @@ func (s *Store) UpdateMessageReplyMarkup(chatID int64, messageID int, replyMarku
 	return &copy, true
 }
 
+// UpdateChatTitle updates a chat's title.
+func (s *Store) UpdateChatTitle(chatID int64, title string) bool {
+	s.chatMu.Lock()
+	defer s.chatMu.Unlock()
+	c, ok := s.chats[chatID]
+	if !ok {
+		return false
+	}
+	c.Title = title
+	return true
+}
+
 // sortByMsgID sorts messages by message_id ascending.
 func sortByMsgID(msgs []models.Message) {
 	for i := 1; i < len(msgs); i++ {

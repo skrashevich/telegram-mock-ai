@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/skrashevich/telegram-mock-ai/internal/bot"
+	"github.com/skrashevich/telegram-mock-ai/internal/models"
 )
 
 func (s *Server) handleGetMe(w http.ResponseWriter, r *http.Request, b *bot.Bot) {
@@ -62,6 +63,40 @@ func (s *Server) handleGetChatMemberCount(w http.ResponseWriter, r *http.Request
 
 	count := s.store.GetChatMemberCount(chatID)
 	respondOK(w, count)
+}
+
+func (s *Server) handleSendChatAction(w http.ResponseWriter, r *http.Request, b *bot.Bot) {
+	chatID, ok := parseChatID(r)
+	if !ok {
+		respondError(w, http.StatusBadRequest, "Bad Request: chat_id is required")
+		return
+	}
+
+	action := parseStringParam(r, "action")
+	if action == "" {
+		respondError(w, http.StatusBadRequest, "Bad Request: action is required")
+		return
+	}
+
+	if _, exists := s.store.GetChat(chatID); !exists {
+		respondError(w, http.StatusBadRequest, "Bad Request: chat not found")
+		return
+	}
+
+	respondBool(w, true)
+}
+
+func (s *Server) handleGetUserProfilePhotos(w http.ResponseWriter, r *http.Request, b *bot.Bot) {
+	_, ok := parseIntParam(r, "user_id")
+	if !ok {
+		respondError(w, http.StatusBadRequest, "Bad Request: user_id is required")
+		return
+	}
+
+	respondOK(w, models.UserProfilePhotos{
+		TotalCount: 0,
+		Photos:     [][]models.PhotoSize{},
+	})
 }
 
 func (s *Server) handleGetChatAdministrators(w http.ResponseWriter, r *http.Request, b *bot.Bot) {

@@ -64,14 +64,40 @@ func NewServer(cfg *config.Config, store *state.Store, registry *bot.Registry, d
 		"sendlocation":  s.handleSendLocation,
 		// Files
 		"getfile": s.handleGetFile,
+		// Polls, dice, contacts, venues
+		"sendpoll":    s.handleSendPoll,
+		"senddice":    s.handleSendDice,
+		"sendcontact": s.handleSendContact,
+		"sendvenue":   s.handleSendVenue,
 		// Callbacks
 		"answercallbackquery": s.handleAnswerCallbackQuery,
 		// Chat management
-		"banchatmember":      s.handleBanChatMember,
-		"unbanchatmember":    s.handleUnbanChatMember,
-		"restrictchatmember": s.handleRestrictChatMember,
-		"promotechatmember":  s.handlePromoteChatMember,
-		"leavechat":          s.handleLeaveChat,
+		"banchatmember":        s.handleBanChatMember,
+		"unbanchatmember":      s.handleUnbanChatMember,
+		"restrictchatmember":   s.handleRestrictChatMember,
+		"promotechatmember":    s.handlePromoteChatMember,
+		"leavechat":            s.handleLeaveChat,
+		"pinchatmessage":       s.handlePinChatMessage,
+		"unpinchatmessage":     s.handleUnpinChatMessage,
+		"unpinallchatmessages": s.handleUnpinAllChatMessages,
+		"setchattitle":         s.handleSetChatTitle,
+		"setchatdescription":   s.handleSetChatDescription,
+		"setchatpermissions":   s.handleSetChatPermissions,
+		"exportchatinvitelink": s.handleExportChatInviteLink,
+		"setmessagereaction":   s.handleSetMessageReaction,
+		// Chat action
+		"sendchataction": s.handleSendChatAction,
+		// User info
+		"getuserprofilephotos": s.handleGetUserProfilePhotos,
+		// Bot commands
+		"setmycommands":    s.handleSetMyCommands,
+		"getmycommands":    s.handleGetMyCommands,
+		"deletemycommands": s.handleDeleteMyCommands,
+		// Menu & admin rights
+		"getchatmenubutton":                 s.handleGetChatMenuButton,
+		"setchatmenubutton":                 s.handleSetChatMenuButton,
+		"getmydefaultadministratorrights":   s.handleGetMyDefaultAdministratorRights,
+		"setmydefaultadministratorrights":   s.handleSetMyDefaultAdministratorRights,
 		// Edit
 		"editmessagereplymarkup": s.handleEditMessageReplyMarkup,
 	}

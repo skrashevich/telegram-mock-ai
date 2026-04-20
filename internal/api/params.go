@@ -93,6 +93,19 @@ func parseJSONBodyParam(r *http.Request, name string) string {
 	return strings.TrimSpace(string(raw))
 }
 
+// parseFloatParam extracts a float64 parameter from the request.
+func parseFloatParam(r *http.Request, name string) (float64, bool) {
+	s := parseStringParam(r, name)
+	if s == "" {
+		return 0, false
+	}
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0, false
+	}
+	return v, true
+}
+
 // parseJSON unmarshals a JSON string into a target.
 func parseJSON(s string, v any) error {
 	return json.Unmarshal([]byte(s), v)
