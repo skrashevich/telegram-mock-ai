@@ -1,4 +1,7 @@
-FROM golang:1.26-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
+
+ARG TARGETOS
+ARG TARGETARCH
 
 RUN apk add --no-cache git ca-certificates
 
@@ -8,19 +11,13 @@ ENV GOTOOLCHAIN=auto
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /bin/telegram-mock-ai ./cmd/telegram-mock-ai
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-s -w" -o /bin/telegram-mock-ai ./cmd/telegram-mock-ai
 
-FROM alpine:3.21
-
-RUN apk add --no-cache ca-certificates tzdata
-RUN adduser -D -u 1000 app
+FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=builder /bin/telegram-mock-ai /usr/local/bin/telegram-mock-ai
 
-USER app
-WORKDIR /home/app
-
 EXPOSE 8081 8082
 
-ENTRYPOINT ["telegram-mock-ai"]
+ENTRYPOINT ["/usr/local/bin/telegram-mock-ai"]
 CMD ["-config", "/etc/telegram-mock-ai/config.yaml"]
