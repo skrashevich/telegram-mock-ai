@@ -1,4 +1,9 @@
 # telegram-mock-ai
+[![Go Report Card](https://img.shields.io/badge/go%20report-A%2B-brightgreen?style=flat&logo=go)](https://goreportcard.com/report/github.com/skrashevich/telegram-mock-ai)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Go Reference](https://pkg.go.dev/badge/github.com/skrashevich/telegram-mock-ai.svg)](https://pkg.go.dev/github.com/skrashevich/telegram-mock-ai)
+[![GitHub release](https://img.shields.io/github/v/release/skrashevich/telegram-mock-ai?include_prereleases)](https://github.com/skrashevich/telegram-mock-ai/releases)
+
 
 <!-- badges:start -->
 [![GitHub stars](https://img.shields.io/github/stars/skrashevich/telegram-mock-ai?style=flat-square)](https://github.com/skrashevich/telegram-mock-ai/stargazers)
