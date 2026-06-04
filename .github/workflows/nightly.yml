@@ -1,0 +1,74 @@
+name: Nightly build
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # daily at 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: "386"
+          - goos: linux
+            goarch: arm
+            goarm: "7"
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
+          - goos: freebsd
+            goarch: amd64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build binary
+        env:
+          CGO_ENABLED: "0"
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+        run: |
+          EXT=""
+          if [ "${GOOS}" = "windows" ]; then EXT=".exe"; fi
+          SUFFIX="${GOOS}-${GOARCH}"
+          if [ -n "${GOARM}" ]; then SUFFIX="${SUFFIX}v${GOARM}"; fi
+          go build -ldflags="-s -w" -o "telegram-mock-ai-${SUFFIX}${EXT}" ./cmd/telegram-mock-ai
+
+      - name: Compress with UPX
+        run: |
+          UPX_VERSION=$(curl -fsSL https://api.github.com/repos/upx/upx/releases/latest | grep tag_name | cut -d '"' -f 4 | sed 's/v//')
+          curl -fsSL "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz" -o upx.tar.xz
+          tar xJf upx.tar.xz
+          sudo mv "upx-${UPX_VERSION}-amd64_linux/upx" /usr/local/bin/
+
+          for f in telegram-mock-ai-*; do
+            upx --best --lzma "$f" || echo "::warning::UPX compression skipped for $f"
+          done
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: telegram-mock-ai-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goarm && format('v{0}', matrix.goarm) || '' }}
+          path: telegram-mock-ai-*
+          retention-days: 30
