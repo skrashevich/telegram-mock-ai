@@ -3,6 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Go Reference](https://pkg.go.dev/badge/github.com/skrashevich/telegram-mock-ai.svg)](https://pkg.go.dev/github.com/skrashevich/telegram-mock-ai)
 [![GitHub release](https://img.shields.io/github/v/release/skrashevich/telegram-mock-ai?include_prereleases)](https://github.com/skrashevich/telegram-mock-ai/releases)
+[![Download binaries](https://img.shields.io/badge/dawnl.ink-download%20binaries-blue)](https://dawnl.ink/skrashevich/telegram-mock-ai/workflows/release/main)
 
 
 <!-- badges:start -->
