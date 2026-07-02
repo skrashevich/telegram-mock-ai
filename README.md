@@ -5,30 +5,28 @@
 [![GitHub release](https://img.shields.io/github/v/release/skrashevich/telegram-mock-ai?include_prereleases)](https://github.com/skrashevich/telegram-mock-ai/releases)
 [![Download nightly](https://img.shields.io/badge/dawnl.ink-nightly%20builds-blue)](https://dawnl.ink/skrashevich/telegram-mock-ai/workflows/nightly/main)
 
-
 <!-- badges:start -->
 [![GitHub stars](https://img.shields.io/github/stars/skrashevich/telegram-mock-ai?style=flat-square)](https://github.com/skrashevich/telegram-mock-ai/stargazers)
 [![Last commit](https://img.shields.io/github/last-commit/skrashevich/telegram-mock-ai?style=flat-square)](https://github.com/skrashevich/telegram-mock-ai/commits/main)
 [![License](https://img.shields.io/github/license/skrashevich/telegram-mock-ai?style=flat-square)](https://github.com/skrashevich/telegram-mock-ai/blob/main/LICENSE)
 <!-- badges:end -->
 
+Mock Telegram Bot API server with LLM-generated replies. It emulates `api.telegram.org`, so a bot connects to it instead of the real Telegram API and works with virtual users, chats, and messages.
 
-Mock-сервер Telegram Bot API с генерацией ответов через LLM. Эмулирует `api.telegram.org` — бот подключается к нему вместо реального Telegram и работает с виртуальными пользователями, чатами и сообщениями.
+Why use it:
 
-Зачем это нужно:
+- **Develop without Telegram**: no internet access, no BotFather token, no real users required
+- **Automated testing**: reproducible scenarios for incoming messages, callback queries, media, joins, and leaves
+- **Load testing**: proactive mode generates a configurable event stream
+- **CI integration tests**: run the server in Docker and test the bot as if it were in production
 
-- **Разработка без Telegram** — не нужен интернет, токен от BotFather и реальные пользователи
-- **Автоматическое тестирование** — воспроизводимые сценарии: входящие сообщения, callback-запросы, медиа, вход/выход участников
-- **Нагрузочное тестирование** — проактивный режим генерирует поток событий с настраиваемой частотой
-- **Интеграционные тесты в CI** — сервер поднимается в Docker, бот работает как в продакшене
-
-LLM (Ollama, OpenAI, Claude, LM Studio, любой OpenAI/Anthropic-совместимый endpoint) генерирует реалистичные ответы «от пользователей» и может создать стартовый набор чатов/юзеров, чтобы не прописывать их вручную.
+An LLM (Ollama, OpenAI, Claude, LM Studio, or any OpenAI/Anthropic-compatible endpoint) can generate realistic user replies and create an initial set of chats and users so you do not have to define everything by hand.
 
 ---
 
-## Установка и запуск
+## Installation and Startup
 
-### Вариант 1: Docker + Ollama (рекомендуется)
+### Option 1: Docker + Ollama (recommended)
 
 ```bash
 git clone https://github.com/skrashevich/telegram-mock-ai.git
@@ -37,17 +35,17 @@ cp config.example.yaml config.yaml
 docker compose up -d
 ```
 
-При первом запуске загрузите модель в Ollama:
+On first run, pull a model into Ollama:
 
 ```bash
 docker exec ollama ollama pull llama3
 ```
 
-Готово. Bot API доступен на `http://localhost:8081`, Admin API — на `http://localhost:8082`.
+Done. The Bot API will be available at `http://localhost:8081`, and the Admin API at `http://localhost:8082`.
 
-### Вариант 2: Docker без LLM
+### Option 2: Docker without an LLM
 
-Если LLM не нужен — только mock API с ручным управлением через Admin API:
+If you only need the mock API with manual control via the Admin API:
 
 ```bash
 docker build -t telegram-mock-ai .
@@ -56,9 +54,9 @@ docker run -p 8081:8081 -p 8082:8082 \
   telegram-mock-ai
 ```
 
-### Вариант 3: из исходников
+### Option 3: From source
 
-Требуется Go 1.22+.
+Requires Go 1.22+.
 
 ```bash
 git clone https://github.com/skrashevich/telegram-mock-ai.git
@@ -69,11 +67,11 @@ make run
 
 ---
 
-## Подключение бота
+## Connecting a Bot
 
-Замените базовый URL Telegram API на адрес mock-сервера. Токен может быть любым — сервер автоматически зарегистрирует бота при первом обращении и **добавит его во все существующие чаты**.
+Replace the Telegram API base URL with the mock server address. The token can be anything: the server automatically registers the bot on first use and **adds it to all existing chats**.
 
-### Python (python-telegram-bot)
+### Python (`python-telegram-bot`)
 
 ```python
 from telegram.ext import ApplicationBuilder
@@ -86,7 +84,7 @@ app = (
 )
 ```
 
-### Python (aiogram)
+### Python (`aiogram`)
 
 ```python
 from aiogram import Bot
@@ -97,7 +95,7 @@ session.api = "http://localhost:8081"
 bot = Bot(token="YOUR_TOKEN", session=session)
 ```
 
-### Go (telebot)
+### Go (`telebot`)
 
 ```go
 bot, _ := tele.NewBot(tele.Settings{
@@ -106,7 +104,7 @@ bot, _ := tele.NewBot(tele.Settings{
 })
 ```
 
-### Node.js (telegraf)
+### Node.js (`telegraf`)
 
 ```javascript
 const bot = new Telegraf('YOUR_TOKEN', {
@@ -114,35 +112,35 @@ const bot = new Telegraf('YOUR_TOKEN', {
 });
 ```
 
-### curl
+### `curl`
 
 ```bash
-# Проверить подключение
+# Check connectivity
 curl http://localhost:8081/botYOUR_TOKEN/getMe
 
-# Отправить сообщение в чат
+# Send a message to a chat
 curl -X POST http://localhost:8081/botYOUR_TOKEN/sendMessage \
   -H 'Content-Type: application/json' \
   -d '{"chat_id": -1001, "text": "Hello!"}'
 
-# Long polling (ожидание 10 сек)
+# Long polling (wait for 10 seconds)
 curl -X POST http://localhost:8081/botYOUR_TOKEN/getUpdates \
   -d '{"timeout": 10}'
 ```
 
 ---
 
-## Типичный сценарий использования
+## Typical Workflow
 
-После запуска сервер уже содержит тестовые данные из конфига: три пользователя (Alice, Bob, Charlie), два чата и одного бота. Бот автоматически добавлен во все чаты, причём **в первом чате — с правами администратора**.
+After startup, the server already contains test data from the config: three users (Alice, Bob, Charlie), two chats, and one bot. The bot is automatically added to every chat, and **in the first chat it gets admin rights**.
 
-При первом подключении бота (первый вызов любого метода API) сервер **сразу отправляет сообщение** от случайного пользователя в один из чатов. В течение **30 секунд** бот получит сообщения и во всех остальных чатах — это имитирует реальную активность сразу после запуска. Если включён LLM, сообщения генерируются нейросетью; без LLM используются шаблонные приветствия.
+When a bot connects for the first time (the first call to any Bot API method), the server **immediately sends a message** from a random user in one of the chats. During the next **30 seconds**, the bot will also receive messages in all other chats, simulating real activity right after launch. If an LLM is enabled, those messages are AI-generated; otherwise, the server falls back to template-based greetings.
 
-Чтобы не описывать пользователей вручную, можно включить **автогенерацию через LLM** — сервер сам создаст реалистичных пользователей, группы и каналы с именами на нужном языке.
+To avoid defining users manually, you can enable **LLM-powered seed generation** so the server creates realistic users, groups, and channels in the language you need.
 
-### Автогенерация seed-данных
+### Seed Data Generation
 
-**Через конфиг** (при запуске сервера):
+**Via config** (on server startup):
 
 ```yaml
 seed:
@@ -154,7 +152,7 @@ seed:
     locale: "ru"
 ```
 
-**Через Admin API** (в любой момент):
+**Via the Admin API** (at any time):
 
 ```bash
 curl -X POST http://localhost:8082/api/seed/generate \
@@ -162,95 +160,96 @@ curl -X POST http://localhost:8082/api/seed/generate \
   -d '{"users_count": 10, "groups_count": 3, "channels_count": 1, "locale": "ru"}'
 ```
 
-LLM сгенерирует пользователей с реалистичными именами и username, создаст группы и каналы с осмысленными названиями, распределит участников по чатам. Все зарегистрированные боты автоматически добавляются в каждый сгенерированный чат, причём **в первом чате — с правами администратора**. Ответ содержит созданные сущности с присвоенными ID.
+The LLM generates users with realistic names and usernames, creates groups and channels with meaningful titles, and distributes members across chats. All registered bots are automatically added to every generated chat, and **the first chat grants them admin rights**. The response includes all created entities with their assigned IDs.
 
-### Инъекция сообщений
+### Message Injection
 
-Имитация отправки сообщения «от пользователя» — все подключённые боты получат обновление:
+Simulate a message sent "by a user" so all connected bots receive an update:
 
 ```bash
 curl -X POST http://localhost:8082/api/chats/-1001/messages \
   -H 'Content-Type: application/json' \
-  -d '{"user_id": 1001, "text": "Привет, бот!"}'
+  -d '{"user_id": 1001, "text": "Hi, bot!"}'
 ```
 
-### Проактивный режим
+### Proactive Mode
 
-Сервер может сам генерировать поток событий — сообщения, вход/выход участников, фото, стикеры — с настраиваемой частотой и **стилем контента**:
+The server can generate its own event stream, including messages, joins, leaves, photos, and stickers, with configurable frequency and **content style**:
 
 ```yaml
 proactive:
   enabled: true
   interval_min: 10s
   interval_max: 60s
-  style: "normal"        # стиль генерируемых сообщений
+  style: "normal"        # style of generated messages
 ```
 
-#### Стили сообщений
+#### Message Styles
 
-Параметр `style` задаёт характер генерируемого контента — полезно при тестировании модерационных ботов:
+The `style` parameter defines the tone of generated content, which is handy when testing moderation bots:
 
-| Стиль | Описание | Пример использования |
+| Style | Description | Example use case |
 |---|---|---|
-| `normal` | Обычные разговорные сообщения | Общее тестирование |
-| `spam` | Крипто-скамы, фейковые розыгрыши, подозрительные ссылки | Тестирование антиспам-бота |
-| `toxic` | Мат, оскорбления, hate speech | Тестирование антимат-бота |
-| `flood` | Повторы символов, emoji-спам, КАПС, бессмысленные последовательности | Тестирование антифлуд-бота |
-| `mixed` | Случайный микс: 40% normal, 20% spam, 20% toxic, 20% flood (по умолчанию) | Комплексное тестирование модерации |
+| `normal` | Regular conversational messages | General testing |
+| `spam` | Crypto scams, fake giveaways, suspicious links | Anti-spam bot testing |
+| `toxic` | Profanity, insults, hate speech | Anti-toxicity bot testing |
+| `flood` | Repeated characters, emoji spam, ALL CAPS, nonsense sequences | Anti-flood bot testing |
+| `mixed` | Random mix: 40% normal, 20% spam, 20% toxic, 20% flood (default) | End-to-end moderation testing |
 
-#### Произвольный промпт
+#### Custom Prompt
 
-Если встроенных пресетов недостаточно, `custom_prompt` позволяет задать любую инструкцию для LLM. Он имеет приоритет над `style`:
+If the built-in presets are not enough, `custom_prompt` lets you supply any instruction for the LLM. It takes priority over `style`:
 
 ```yaml
 proactive:
   enabled: true
   interval_min: 5s
   interval_max: 30s
-  custom_prompt: "Генерируй сообщения с рекламой онлайн-казино и ставок на спорт. Используй типичные приёмы: обещания лёгких денег, фейковые отзывы, ссылки вида casino-xyz.com"
+  custom_prompt: "Generate messages advertising online casinos and sports betting. Use typical tricks: easy-money promises, fake testimonials, and links like casino-xyz.com"
 ```
 
-Ещё примеры `custom_prompt`:
-- `"Генерируй сообщения на украинском языке с обсуждением новостей"` — тестирование мультиязычности
-- `"Пиши очень длинные сообщения по 500+ символов с цитатами и ссылками"` — тестирование лимитов
-- `"Чередуй нормальные сообщения с попытками фишинга: просьбы перейти по ссылке, ввести пароль"` — тестирование антифишинга
+More `custom_prompt` examples:
 
-### Скачивание файлов
+- `"Generate Ukrainian-language messages discussing current news"` for multilingual testing
+- `"Write very long messages, 500+ characters, with quotes and links"` for limit testing
+- `"Alternate normal messages with phishing attempts: ask users to open a link or enter a password"` for anti-phishing bot testing
 
-Mock-сервер полностью эмулирует работу с файлами через `getFile` + endpoint скачивания, генерируя placeholder-контент на лету:
+### File Downloads
+
+The mock server fully emulates file handling through `getFile` plus the file download endpoint, generating placeholder content on the fly:
 
 ```bash
-# 1. Получить file_path по file_id
+# 1. Get file_path from file_id
 curl http://localhost:8081/botYOUR_TOKEN/getFile?file_id=AgACAgIAAxkBAAI...
 
-# Ответ: {"ok":true,"result":{"file_id":"...","file_path":"photos/file_abc123.jpg"}}
+# Response: {"ok":true,"result":{"file_id":"...","file_path":"photos/file_abc123.jpg"}}
 
-# 2. Скачать файл по file_path
+# 2. Download the file by file_path
 curl http://localhost:8081/file/botYOUR_TOKEN/photos/file_abc123.jpg -o photo.jpg
 ```
 
-Тип placeholder определяется автоматически по префиксу `file_id`:
+The placeholder type is chosen automatically from the `file_id` prefix:
 
-| Префикс file_id | Тип | Формат | Размер |
+| `file_id` prefix | Type | Format | Size |
 |---|---|---|---|
-| `AgAC...` | Фото | JPEG (градиент + фигура) | 800×600 |
-| `CAAC...` | Стикер | WebP (прозрачный фон, emoji-like) | 512×512 |
-| `BAADAgAD...` | Видео | JPEG (превью-кадр) | 640×480 |
-| `BQAC...` | Документ | Stub PDF | — |
-| `CQACAgIAAxkBAAI...` | Аудио | Stub MP3 | — |
-| `DQAC...` | Голосовое | Stub OGG | — |
+| `AgAC...` | Photo | JPEG (gradient + shape) | 800x600 |
+| `CAAC...` | Sticker | WebP (transparent background, emoji-like) | 512x512 |
+| `BAADAgAD...` | Video | JPEG (preview frame) | 640x480 |
+| `BQAC...` | Document | Stub PDF | - |
+| `CQACAgIAAxkBAAI...` | Audio | Stub MP3 | - |
+| `DQAC...` | Voice | Stub OGG | - |
 
-Фото и стикеры — полноценные изображения с уникальным паттерном, сгенерированным из хеша file_path (каждый file_id даёт визуально отличающуюся картинку).
+Photos and stickers are real generated images with a unique pattern derived from the `file_path` hash, so each `file_id` produces a visually distinct result.
 
 ---
 
-## Конфигурация
+## Configuration
 
-### LLM-провайдеры
+### LLM Providers
 
-Сервер поддерживает два протокола API: OpenAI-совместимый (по умолчанию) и Anthropic.
+The server supports two API protocols: OpenAI-compatible (default) and Anthropic.
 
-**Ollama (локально):**
+**Ollama (local):**
 
 ```yaml
 llm:
@@ -278,7 +277,7 @@ llm:
   max_tokens: 1024
 ```
 
-**LM Studio / vLLM / любой OpenAI-совместимый сервер:**
+**LM Studio / vLLM / any OpenAI-compatible server:**
 
 ```yaml
 llm:
@@ -286,16 +285,16 @@ llm:
   model: "local-model"
 ```
 
-**Без LLM:**
+**Without an LLM:**
 
 ```yaml
 llm:
   enabled: false
 ```
 
-При отключённом LLM бот получает только обновления, созданные вручную через Admin API или прописанные в seed-данных.
+When the LLM is disabled, the bot only receives updates created manually via the Admin API or pre-defined in the seed data.
 
-### Полный конфиг (config.yaml)
+### Full config (`config.yaml`)
 
 ```yaml
 server:
@@ -306,22 +305,22 @@ server:
 
 llm:
   enabled: true
-  api_type: "openai"              # "openai" или "anthropic"
+  api_type: "openai"              # "openai" or "anthropic"
   base_url: "http://localhost:11434/v1"
   api_key: ""
   model: "gpt-4o-mini"
   temperature: 0.8
   max_tokens: 512
   timeout: 30s
-  response_delay_min: 500ms       # Имитация «печатает...»
+  response_delay_min: 500ms       # Simulates "typing..."
   response_delay_max: 3s
 
 proactive:
   enabled: false
   interval_min: 10s
   interval_max: 60s
-  style: "normal"                   # "normal", "spam", "toxic", "flood", "mixed"
-  # custom_prompt: "..."            # Произвольная инструкция (приоритет над style)
+  style: "normal"                 # "normal", "spam", "toxic", "flood", "mixed"
+  # custom_prompt: "..."          # Free-form instruction (takes priority over style)
   scenarios:
     - type: user_message
       weight: 0.6
@@ -378,123 +377,123 @@ log:
 
 admin:
   enabled: true
-  host: "127.0.0.1"              # Только localhost
+  host: "127.0.0.1"               # localhost only
   port: 8082
 ```
 
-### Переменные окружения
+### Environment Variables
 
-Имеют приоритет над `config.yaml`:
+These override values from `config.yaml`:
 
-| Переменная | Описание |
+| Variable | Description |
 |---|---|
-| `TELEGRAM_MOCK_SERVER_HOST` | Адрес Bot API (по умолчанию `0.0.0.0`) |
-| `TELEGRAM_MOCK_SERVER_PORT` | Порт Bot API (по умолчанию `8081`) |
-| `TELEGRAM_MOCK_LLM_ENABLED` | Включить LLM (`true`/`false`) |
-| `TELEGRAM_MOCK_LLM_API_TYPE` | Протокол API: `openai`, `anthropic` |
-| `TELEGRAM_MOCK_LLM_BASE_URL` | URL LLM endpoint |
-| `TELEGRAM_MOCK_LLM_API_KEY` | API-ключ |
-| `TELEGRAM_MOCK_LLM_MODEL` | Имя модели |
-| `TELEGRAM_MOCK_PROACTIVE_ENABLED` | Включить проактивный режим |
-| `TELEGRAM_MOCK_SEED_GENERATE_ENABLED` | Включить автогенерацию seed-данных |
-| `TELEGRAM_MOCK_LOG_LEVEL` | Уровень логов: `debug`, `info`, `warn`, `error` |
-| `TELEGRAM_MOCK_ADMIN_PORT` | Порт Admin API (по умолчанию `8082`) |
+| `TELEGRAM_MOCK_SERVER_HOST` | Bot API host (default: `0.0.0.0`) |
+| `TELEGRAM_MOCK_SERVER_PORT` | Bot API port (default: `8081`) |
+| `TELEGRAM_MOCK_LLM_ENABLED` | Enable LLM (`true`/`false`) |
+| `TELEGRAM_MOCK_LLM_API_TYPE` | API protocol: `openai`, `anthropic` |
+| `TELEGRAM_MOCK_LLM_BASE_URL` | LLM endpoint URL |
+| `TELEGRAM_MOCK_LLM_API_KEY` | API key |
+| `TELEGRAM_MOCK_LLM_MODEL` | Model name |
+| `TELEGRAM_MOCK_PROACTIVE_ENABLED` | Enable proactive mode |
+| `TELEGRAM_MOCK_SEED_GENERATE_ENABLED` | Enable automatic seed generation |
+| `TELEGRAM_MOCK_LOG_LEVEL` | Log level: `debug`, `info`, `warn`, `error` |
+| `TELEGRAM_MOCK_ADMIN_PORT` | Admin API port (default: `8082`) |
 
 ---
 
 ## Admin API
 
-Управление состоянием mock-сервера. По умолчанию доступен на `127.0.0.1:8082`.
+Manage the mock server state. By default, it is available at `127.0.0.1:8082`.
 
-| Метод | Endpoint | Описание |
+| Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/health` | Health check |
-| `GET` | `/api/state` | Полный дамп состояния (пользователи, чаты, боты) |
-| `GET` | `/api/users` | Список пользователей |
-| `POST` | `/api/users` | Создать пользователя |
-| `GET` | `/api/chats` | Список чатов |
-| `POST` | `/api/chats` | Создать чат |
-| `GET` | `/api/chats/{id}/members` | Список участников чата |
-| `POST` | `/api/chats/{id}/members` | Добавить участника |
-| `GET` | `/api/chats/{id}/messages` | История сообщений |
-| `POST` | `/api/chats/{id}/messages` | Инъекция сообщения от пользователя |
-| `GET` | `/api/bots` | Список ботов |
-| `POST` | `/api/bots/{token}/updates` | Инъекция произвольного Update |
-| `POST` | `/api/seed/generate` | Генерация seed-данных через LLM |
+| `GET` | `/api/state` | Full state dump (users, chats, bots) |
+| `GET` | `/api/users` | List users |
+| `POST` | `/api/users` | Create a user |
+| `GET` | `/api/chats` | List chats |
+| `POST` | `/api/chats` | Create a chat |
+| `GET` | `/api/chats/{id}/members` | List chat members |
+| `POST` | `/api/chats/{id}/members` | Add a member |
+| `GET` | `/api/chats/{id}/messages` | Message history |
+| `POST` | `/api/chats/{id}/messages` | Inject a user message |
+| `GET` | `/api/bots` | List bots |
+| `POST` | `/api/bots/{token}/updates` | Inject an arbitrary Update |
+| `POST` | `/api/seed/generate` | Generate seed data via LLM |
 
-### Примеры
+### Examples
 
 ```bash
-# Создать пользователя
+# Create a user
 curl -X POST http://localhost:8082/api/users \
   -d '{"first_name": "Diana", "username": "diana"}'
 
-# Создать группу
+# Create a group
 curl -X POST http://localhost:8082/api/chats \
   -d '{"type": "group", "title": "New Group", "members": [1001, 1002]}'
 
-# Отправить сообщение от пользователя (боты получат обновление)
+# Send a user message (bots will receive an update)
 curl -X POST http://localhost:8082/api/chats/-1001/messages \
-  -d '{"user_id": 1001, "text": "Привет!"}'
+  -d '{"user_id": 1001, "text": "Hi!"}'
 
-# Сгенерировать пользователей и чаты через LLM
+# Generate users and chats via LLM
 curl -X POST http://localhost:8082/api/seed/generate \
   -d '{"users_count": 5, "groups_count": 2, "locale": "ru"}'
 
-# Инъекция произвольного Update конкретному боту
+# Inject an arbitrary Update into a specific bot
 curl -X POST http://localhost:8082/api/bots/YOUR_TOKEN/updates \
   -d '{"message":{"message_id":1,"from":{"id":1001,"first_name":"Alice"},"chat":{"id":-1001,"type":"group"},"text":"test"}}'
 ```
 
 ---
 
-## Реализованные методы Bot API
+## Implemented Bot API Methods
 
-28 методов, покрывающих основные сценарии работы ботов:
+28 methods covering the most common bot workflows:
 
-| Категория | Методы |
+| Category | Methods |
 |---|---|
-| Информация | `getMe`, `getChat`, `getChatMember`, `getChatMemberCount`, `getChatAdministrators` |
-| Обновления | `getUpdates`, `setWebhook`, `deleteWebhook`, `getWebhookInfo` |
-| Сообщения | `sendMessage`, `editMessageText`, `editMessageReplyMarkup`, `deleteMessage`, `forwardMessage`, `copyMessage`, `answerCallbackQuery` |
-| Медиа | `sendPhoto`, `sendDocument`, `sendVideo`, `sendAudio`, `sendVoice`, `sendSticker`, `sendAnimation`, `sendLocation` |
-| Файлы | `getFile` + endpoint скачивания `/file/bot{token}/{path}` |
-| Управление чатом | `banChatMember`, `unbanChatMember`, `restrictChatMember`, `promoteChatMember`, `leaveChat` |
+| Information | `getMe`, `getChat`, `getChatMember`, `getChatMemberCount`, `getChatAdministrators` |
+| Updates | `getUpdates`, `setWebhook`, `deleteWebhook`, `getWebhookInfo` |
+| Messages | `sendMessage`, `editMessageText`, `editMessageReplyMarkup`, `deleteMessage`, `forwardMessage`, `copyMessage`, `answerCallbackQuery` |
+| Media | `sendPhoto`, `sendDocument`, `sendVideo`, `sendAudio`, `sendVoice`, `sendSticker`, `sendAnimation`, `sendLocation` |
+| Files | `getFile` + download endpoint `/file/bot{token}/{path}` |
+| Chat management | `banChatMember`, `unbanChatMember`, `restrictChatMember`, `promoteChatMember`, `leaveChat` |
 
 ---
 
-## Архитектура
+## Architecture
 
-```
-cmd/telegram-mock-ai/main.go     — точка входа, wiring, graceful shutdown
+```text
+cmd/telegram-mock-ai/main.go     - entry point, wiring, graceful shutdown
 internal/
-├── api/          — HTTP-обработчики Bot API и Admin API
-├── bot/          — Реестр ботов (авто-регистрация по токену)
-├── state/        — In-memory хранилище (users, chats, messages, members)
-├── updates/      — Очередь обновлений + диспетчер (queue/webhook)
-├── seed/         — LLM-генерация seed-данных
-├── llm/          — Клиент OpenAI/Anthropic API + промпты
-├── webhook/      — Доставка обновлений по webhook с ретраями
-├── proactive/    — Движок проактивной генерации событий
-├── config/       — YAML + env конфигурация
-└── models/       — Структуры данных Telegram API
+|- api/          - Bot API and Admin API HTTP handlers
+|- bot/          - Bot registry (auto-register by token)
+|- state/        - In-memory store (users, chats, messages, members)
+|- updates/      - Update queue and dispatcher (queue/webhook)
+|- seed/         - LLM seed generation
+|- llm/          - OpenAI/Anthropic client and prompts
+|- webhook/      - Webhook delivery with retries
+|- proactive/    - Proactive event generation engine
+|- config/       - YAML and env configuration
+`- models/       - Telegram API data structures
 ```
 
-```
-Бот → POST /bot{token}/sendMessage → state → [async LLM ответ] → очередь/webhook → Бот
-Бот → getFile(file_id) → file_path → GET /file/bot{token}/{path} → placeholder JPEG/WebP/stub
-Проактивный движок → таймер → сценарий → LLM (style/custom_prompt) → обновление → Бот
-Admin API → POST /api/seed/generate → LLM → users + chats в state
+```text
+Bot -> POST /bot{token}/sendMessage -> state -> [async LLM reply] -> queue/webhook -> Bot
+Bot -> getFile(file_id) -> file_path -> GET /file/bot{token}/{path} -> placeholder JPEG/WebP/stub
+Proactive engine -> timer -> scenario -> LLM (style/custom_prompt) -> update -> Bot
+Admin API -> POST /api/seed/generate -> LLM -> users + chats in state
 ```
 
-## Сборка
+## Build
 
 ```bash
-make build    # бинарник
-make run      # собрать и запустить
-make test     # тесты
+make build    # binary
+make run      # build and run
+make test     # tests
 ```
 
-## Лицензия
+## License
 
 Apache 2.0
