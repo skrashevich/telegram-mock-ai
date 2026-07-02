@@ -1,20 +1,25 @@
 package models
 
+import "encoding/json"
+
 // User represents a Telegram user or bot.
 type User struct {
-	ID                      int64  `json:"id"`
-	IsBot                   bool   `json:"is_bot"`
-	FirstName               string `json:"first_name"`
-	LastName                string `json:"last_name,omitempty"`
-	Username                string `json:"username,omitempty"`
-	LanguageCode            string `json:"language_code,omitempty"`
-	IsPremium               bool   `json:"is_premium,omitempty"`
-	AddedToAttachmentMenu   bool   `json:"added_to_attachment_menu,omitempty"`
-	CanJoinGroups           bool   `json:"can_join_groups,omitempty"`
-	CanReadAllGroupMessages bool   `json:"can_read_all_group_messages,omitempty"`
-	SupportsInlineQueries   bool   `json:"supports_inline_queries,omitempty"`
-	CanConnectToBusiness    bool   `json:"can_connect_to_business,omitempty"`
-	HasMainWebApp           bool   `json:"has_main_web_app,omitempty"`
+	ID                       int64  `json:"id"`
+	IsBot                    bool   `json:"is_bot"`
+	FirstName                string `json:"first_name"`
+	LastName                 string `json:"last_name,omitempty"`
+	Username                 string `json:"username,omitempty"`
+	LanguageCode             string `json:"language_code,omitempty"`
+	IsPremium                bool   `json:"is_premium,omitempty"`
+	AddedToAttachmentMenu    bool   `json:"added_to_attachment_menu,omitempty"`
+	CanJoinGroups            bool   `json:"can_join_groups,omitempty"`
+	CanReadAllGroupMessages  bool   `json:"can_read_all_group_messages,omitempty"`
+	SupportsInlineQueries    bool   `json:"supports_inline_queries,omitempty"`
+	CanConnectToBusiness     bool   `json:"can_connect_to_business,omitempty"`
+	HasMainWebApp            bool   `json:"has_main_web_app,omitempty"`
+	SupportsGuestQueries     bool   `json:"supports_guest_queries,omitempty"`
+	SupportsJoinRequestQueries bool `json:"supports_join_request_queries,omitempty"`
+	CanManageBots            bool   `json:"can_manage_bots,omitempty"`
 }
 
 // Chat represents a Telegram chat.
@@ -44,6 +49,7 @@ type ChatFullInfo struct {
 	LinkedChatID           int64            `json:"linked_chat_id,omitempty"`
 	MaxReactionCount       int              `json:"max_reaction_count,omitempty"`
 	AccentColorID          int              `json:"accent_color_id,omitempty"`
+	GuardBot               *User            `json:"guard_bot,omitempty"`
 }
 
 // Message represents a Telegram message.
@@ -89,8 +95,9 @@ type Message struct {
 	ReplyMarkup          *InlineKeyboard      `json:"reply_markup,omitempty"`
 	HasProtectedContent  bool                 `json:"has_protected_content,omitempty"`
 	IsTopicMessage       bool                 `json:"is_topic_message,omitempty"`
+	RichMessage          json.RawMessage      `json:"rich_message,omitempty"`
 	// Deprecated: use ForwardOrigin instead. Kept for backward compatibility.
-	ForwardFrom *User  `json:"forward_from,omitempty"`
+	ForwardFrom *User `json:"forward_from,omitempty"`
 	ForwardDate int64  `json:"forward_date,omitempty"`
 }
 
@@ -269,6 +276,23 @@ type Poll struct {
 	ExplanationEntities   []MessageEntity `json:"explanation_entities,omitempty"`
 	OpenPeriod            int             `json:"open_period,omitempty"`
 	CloseDate             int64           `json:"close_date,omitempty"`
+	Media                 *PollMedia      `json:"media,omitempty"`
+	ExplanationMedia      *PollMedia      `json:"explanation_media,omitempty"`
+	MembersOnly           bool            `json:"members_only,omitempty"`
+	CountryCodes          []string        `json:"country_codes,omitempty"`
+}
+
+// PollMedia describes the media shown in a poll.
+type PollMedia struct {
+	Type             string `json:"type"` // "photo", "video", "audio", "document", "link"
+	Media            string `json:"media,omitempty"`
+	Link             *Link  `json:"link,omitempty"`
+}
+
+// Link represents a URL to display as media in a poll.
+type Link struct {
+	URL  string `json:"url"`
+	Text string `json:"text,omitempty"`
 }
 
 // PollOption contains information about one answer option in a poll.
@@ -276,6 +300,20 @@ type PollOption struct {
 	Text         string          `json:"text"`
 	TextEntities []MessageEntity `json:"text_entities,omitempty"`
 	VoterCount   int             `json:"voter_count"`
+	Media        *PollMedia      `json:"media,omitempty"`
+}
+
+// InputPollOption contains information about a poll option to send.
+type InputPollOption struct {
+	Text         string          `json:"text"`
+	TextEntities []MessageEntity `json:"text_entities,omitempty"`
+	Media        json.RawMessage `json:"media,omitempty"` // InputPollOptionMedia union
+}
+
+// InputMediaLink represents a URL to display as media in a poll option (Bot API 10.1).
+type InputMediaLink struct {
+	URL  string `json:"url"`
+	Text string `json:"text,omitempty"`
 }
 
 // Dice represents an animated emoji that displays a random value.
@@ -327,16 +365,16 @@ type LoginUrl struct {
 
 // Update represents an incoming update from Telegram.
 type Update struct {
-	UpdateID           int64                `json:"update_id"`
-	Message            *Message             `json:"message,omitempty"`
-	EditedMessage      *Message             `json:"edited_message,omitempty"`
-	ChannelPost        *Message             `json:"channel_post,omitempty"`
-	EditedChannelPost  *Message             `json:"edited_channel_post,omitempty"`
-	CallbackQuery      *CallbackQuery       `json:"callback_query,omitempty"`
-	MessageReaction    *MessageReactionUpdated `json:"message_reaction,omitempty"`
-	ChatMember         *ChatMemberUpdated   `json:"chat_member,omitempty"`
-	MyChatMember       *ChatMemberUpdated   `json:"my_chat_member,omitempty"`
-	ChatJoinRequest    *ChatJoinRequest     `json:"chat_join_request,omitempty"`
+	UpdateID          int64                    `json:"update_id"`
+	Message           *Message                 `json:"message,omitempty"`
+	EditedMessage     *Message                 `json:"edited_message,omitempty"`
+	ChannelPost       *Message                 `json:"channel_post,omitempty"`
+	EditedChannelPost *Message                 `json:"edited_channel_post,omitempty"`
+	CallbackQuery     *CallbackQuery           `json:"callback_query,omitempty"`
+	MessageReaction   *MessageReactionUpdated  `json:"message_reaction,omitempty"`
+	ChatMember        *ChatMemberUpdated       `json:"chat_member,omitempty"`
+	MyChatMember      *ChatMemberUpdated       `json:"my_chat_member,omitempty"`
+	ChatJoinRequest   *ChatJoinRequest         `json:"chat_join_request,omitempty"`
 }
 
 // CallbackQuery represents a callback query from an inline keyboard button.
@@ -363,12 +401,13 @@ type MessageReactionUpdated struct {
 
 // ChatJoinRequest represents a join request sent to a chat.
 type ChatJoinRequest struct {
-	Chat       Chat   `json:"chat"`
-	From       User   `json:"from"`
-	UserChatID int64  `json:"user_chat_id"`
-	Date       int64  `json:"date"`
-	Bio        string `json:"bio,omitempty"`
+	Chat       Chat            `json:"chat"`
+	From       User            `json:"from"`
+	UserChatID int64           `json:"user_chat_id"`
+	Date       int64           `json:"date"`
+	Bio        string          `json:"bio,omitempty"`
 	InviteLink *ChatInviteLink `json:"invite_link,omitempty"`
+	QueryID    string          `json:"query_id,omitempty"`
 }
 
 // ChatInviteLink represents an invite link for a chat.
@@ -401,20 +440,21 @@ type ChatMemberUpdated struct {
 
 // ChatPermissions represents the default permissions of a chat.
 type ChatPermissions struct {
-	CanSendMessages       bool `json:"can_send_messages,omitempty"`
-	CanSendAudios         bool `json:"can_send_audios,omitempty"`
-	CanSendDocuments      bool `json:"can_send_documents,omitempty"`
-	CanSendPhotos         bool `json:"can_send_photos,omitempty"`
-	CanSendVideos         bool `json:"can_send_videos,omitempty"`
-	CanSendVideoNotes     bool `json:"can_send_video_notes,omitempty"`
-	CanSendVoiceNotes     bool `json:"can_send_voice_notes,omitempty"`
-	CanSendPolls          bool `json:"can_send_polls,omitempty"`
-	CanSendOtherMessages  bool `json:"can_send_other_messages,omitempty"`
-	CanAddWebPagePreviews bool `json:"can_add_web_page_previews,omitempty"`
-	CanChangeInfo         bool `json:"can_change_info,omitempty"`
-	CanInviteUsers        bool `json:"can_invite_users,omitempty"`
-	CanPinMessages        bool `json:"can_pin_messages,omitempty"`
-	CanManageTopics       bool `json:"can_manage_topics,omitempty"`
+	CanSendMessages        bool `json:"can_send_messages,omitempty"`
+	CanSendAudios          bool `json:"can_send_audios,omitempty"`
+	CanSendDocuments       bool `json:"can_send_documents,omitempty"`
+	CanSendPhotos          bool `json:"can_send_photos,omitempty"`
+	CanSendVideos          bool `json:"can_send_videos,omitempty"`
+	CanSendVideoNotes      bool `json:"can_send_video_notes,omitempty"`
+	CanSendVoiceNotes      bool `json:"can_send_voice_notes,omitempty"`
+	CanSendPolls           bool `json:"can_send_polls,omitempty"`
+	CanSendOtherMessages   bool `json:"can_send_other_messages,omitempty"`
+	CanAddWebPagePreviews  bool `json:"can_add_web_page_previews,omitempty"`
+	CanChangeInfo          bool `json:"can_change_info,omitempty"`
+	CanInviteUsers         bool `json:"can_invite_users,omitempty"`
+	CanPinMessages         bool `json:"can_pin_messages,omitempty"`
+	CanManageTopics        bool `json:"can_manage_topics,omitempty"`
+	CanReactToMessages     bool `json:"can_react_to_messages,omitempty"`
 }
 
 // InlineKeyboard represents an inline keyboard.

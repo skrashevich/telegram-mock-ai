@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/json"
 	"sync"
 
 	"github.com/skrashevich/telegram-mock-ai/internal/models"
@@ -349,6 +350,22 @@ func (s *Store) UpdateMessageReplyMarkup(chatID int64, messageID int, replyMarku
 	m.ReplyMarkup = replyMarkup
 	copy := *m
 	return &copy, true
+}
+
+// UpdateMessageRich updates the rich_message field of a message.
+func (s *Store) UpdateMessageRich(chatID int64, messageID int, richMessage json.RawMessage) bool {
+	s.msgMu.Lock()
+	defer s.msgMu.Unlock()
+	chatMsgs, ok := s.messages[chatID]
+	if !ok {
+		return false
+	}
+	m, ok := chatMsgs[messageID]
+	if !ok {
+		return false
+	}
+	m.RichMessage = richMessage
+	return true
 }
 
 // UpdateChatTitle updates a chat's title.
