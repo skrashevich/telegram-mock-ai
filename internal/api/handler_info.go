@@ -113,8 +113,13 @@ func (s *Server) handleGetChatAdministrators(w http.ResponseWriter, r *http.Requ
 
 	members := s.store.GetChatMembers(chatID)
 	var admins []any
+	returnBots := parseStringParam(r, "return_bots") == "true"
 	for _, m := range members {
 		if m.Status == "creator" || m.Status == "administrator" {
+			// Filter bots if return_bots is not set (Bot API 10.0)
+			if !returnBots && m.User.IsBot {
+				continue
+			}
 			admins = append(admins, m)
 		}
 	}

@@ -152,12 +152,6 @@ func (s *Server) handleEditMessageText(w http.ResponseWriter, r *http.Request, b
 		return
 	}
 
-	text := parseStringParam(r, "text")
-	if text == "" {
-		respondError(w, http.StatusBadRequest, "Bad Request: message text is empty")
-		return
-	}
-
 	msg, exists := s.store.GetMessage(chatID, int(messageID))
 	if !exists {
 		respondError(w, http.StatusBadRequest, "Bad Request: message not found")
@@ -170,6 +164,20 @@ func (s *Server) handleEditMessageText(w http.ResponseWriter, r *http.Request, b
 		return
 	}
 
+	// Parse text (optional for rich_message edits)
+	text := parseStringParam(r, "text")
+
+	// Parse rich_message if provided (Bot API 10.1)
+	var richMessage json.RawMessage
+	if rm := parseStringParam(r, "rich_message"); rm != "" {
+		richMessage = json.RawMessage(rm)
+	}
+
+	if text == "" && richMessage == nil {
+		respondError(w, http.StatusBadRequest, "Bad Request: text or rich_message is required")
+		return
+	}
+
 	// Parse reply_markup if provided
 	var replyMarkup *models.InlineKeyboard
 	if rm := parseStringParam(r, "reply_markup"); rm != "" {
@@ -179,13 +187,29 @@ func (s *Server) handleEditMessageText(w http.ResponseWriter, r *http.Request, b
 		}
 	}
 
-	updated, ok2 := s.store.UpdateMessageText(chatID, int(messageID), text, replyMarkup)
-	if !ok2 {
-		respondError(w, http.StatusBadRequest, "Bad Request: message not found")
+	// Only update text if actually provided (preserve existing for rich_message-only edits)
+	if text != "" || richMessage != nil {
+		updateText := text
+		if text == "" {
+			updateText = msg.Text // preserve existing text
+		}
+		updated, ok2 := s.store.UpdateMessageText(chatID, int(messageID), updateText, replyMarkup)
+		if !ok2 {
+			respondError(w, http.StatusBadRequest, "Bad Request: message not found")
+			return
+		}
+
+		// Apply rich_message if provided
+		if richMessage != nil {
+			s.store.UpdateMessageRich(chatID, int(messageID), richMessage)
+			updated.RichMessage = richMessage
+		}
+
+		respondOK(w, updated)
 		return
 	}
 
-	respondOK(w, updated)
+	respondBool(w, true)
 }
 
 func (s *Server) handleDeleteMessage(w http.ResponseWriter, r *http.Request, b *bot.Bot) {
@@ -292,6 +316,85 @@ func (s *Server) handleCopyMessage(w http.ResponseWriter, r *http.Request, b *bo
 
 	// copyMessage returns MessageId object
 	respondOK(w, map[string]int{"message_id": copied.MessageID})
+}
+
+// handleSendRichMessage handles sendRichMessage (Bot API 10.1).
+func (s *Server) handleSendRichMessage(w http.ResponseWriter, r *http.Request, b *bot.Bot) {
+	chatID, ok := parseChatID(r)
+	if !ok {
+		respondError(w, http.StatusBadRequest, "Bad Request: chat_id is required")
+		return
+	}
+
+	richMessageRaw := parseStringParam(r, "rich_message")
+	if richMessageRaw == "" {
+		respondError(w, http.StatusBadRequest, "Bad Request: rich_message is required")
+		return
+	}
+
+	chat, exists := s.store.GetChat(chatID)
+	if !exists {
+		chat = s.store.CreateChat(models.Chat{
+			ID:   chatID,
+			Type: "private",
+		})
+	}
+
+	// Verify it's valid JSON
+	var rmObj map[string]any
+	if err := json.Unmarshal([]byte(richMessageRaw), &rmObj); err != nil {
+		respondError(w, http.StatusBadRequest, "Bad Request: invalid rich_message format")
+		return
+	}
+
+	msg := s.store.StoreMessage(models.Message{
+		From:        &b.User,
+		Chat:        *chat,
+		Date:        time.Now().Unix(),
+		RichMessage: json.RawMessage(richMessageRaw),
+	})
+
+	respondOK(w, msg)
+}
+
+// handleSendRichMessageDraft handles sendRichMessageDraft (Bot API 10.1).
+func (s *Server) handleSendRichMessageDraft(w http.ResponseWriter, r *http.Request, b *bot.Bot) {
+	chatID, ok := parseChatID(r)
+	if !ok {
+		respondError(w, http.StatusBadRequest, "Bad Request: chat_id is required")
+		return
+	}
+
+	richMessageRaw := parseStringParam(r, "rich_message")
+	if richMessageRaw == "" {
+		respondError(w, http.StatusBadRequest, "Bad Request: rich_message is required")
+		return
+	}
+
+	chat, exists := s.store.GetChat(chatID)
+	if !exists {
+		chat = s.store.CreateChat(models.Chat{
+			ID:   chatID,
+			Type: "private",
+		})
+	}
+
+	// Verify it's valid JSON
+	var rmObj map[string]any
+	if err := json.Unmarshal([]byte(richMessageRaw), &rmObj); err != nil {
+		respondError(w, http.StatusBadRequest, "Bad Request: invalid rich_message format")
+		return
+	}
+
+	// Draft messages are stored like regular rich messages
+	msg := s.store.StoreMessage(models.Message{
+		From:        &b.User,
+		Chat:        *chat,
+		Date:        time.Now().Unix(),
+		RichMessage: json.RawMessage(richMessageRaw),
+	})
+
+	respondOK(w, msg)
 }
 
 func defaultReplyPrompt(user models.User) string {

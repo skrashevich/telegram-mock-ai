@@ -323,3 +323,33 @@ func (s *Server) handleEditMessageReplyMarkup(w http.ResponseWriter, r *http.Req
 
 	respondOK(w, updated)
 }
+
+// handleAnswerChatJoinRequestQuery handles answerChatJoinRequestQuery (Bot API 10.1).
+func (s *Server) handleAnswerChatJoinRequestQuery(w http.ResponseWriter, r *http.Request, b *bot.Bot) {
+	queryID := parseStringParam(r, "query_id")
+	if queryID == "" {
+		respondError(w, http.StatusBadRequest, "Bad Request: query_id is required")
+		return
+	}
+
+	// In a mock, we just acknowledge the query
+	respondBool(w, true)
+}
+
+// handleSendChatJoinRequestWebApp handles sendChatJoinRequestWebApp (Bot API 10.1).
+func (s *Server) handleSendChatJoinRequestWebApp(w http.ResponseWriter, r *http.Request, b *bot.Bot) {
+	_, ok := parseChatID(r)
+	if !ok {
+		respondError(w, http.StatusBadRequest, "Bad Request: chat_id is required")
+		return
+	}
+
+	queryID := parseStringParam(r, "query_id")
+	if queryID == "" {
+		respondError(w, http.StatusBadRequest, "Bad Request: query_id is required")
+		return
+	}
+
+	// Return a mock Web App URL
+	respondOK(w, "https://t.me/"+b.User.Username+"/app?startapp="+queryID)
+}

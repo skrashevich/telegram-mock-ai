@@ -100,6 +100,12 @@ func NewServer(cfg *config.Config, store *state.Store, registry *bot.Registry, d
 		"setmydefaultadministratorrights":   s.handleSetMyDefaultAdministratorRights,
 		// Edit
 		"editmessagereplymarkup": s.handleEditMessageReplyMarkup,
+		// Bot API 10.1: Rich Messages
+		"sendrichmessage":      s.handleSendRichMessage,
+		"sendrichmessagedraft": s.handleSendRichMessageDraft,
+		// Bot API 10.1: Join Request Queries
+		"answerchatjoinrequestquery":   s.handleAnswerChatJoinRequestQuery,
+		"sendchatjoinrequestwebapp":    s.handleSendChatJoinRequestWebApp,
 	}
 	return s
 }

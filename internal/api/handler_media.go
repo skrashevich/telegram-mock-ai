@@ -144,8 +144,8 @@ func (s *Server) handleSendPoll(w http.ResponseWriter, r *http.Request, b *bot.B
 		}
 	}
 
-	if len(optionTexts) < 2 {
-		respondError(w, http.StatusBadRequest, "Bad Request: poll must have at least 2 options")
+	if len(optionTexts) < 1 {
+		respondError(w, http.StatusBadRequest, "Bad Request: poll must have at least 1 option")
 		return
 	}
 
@@ -164,12 +164,45 @@ func (s *Server) handleSendPoll(w http.ResponseWriter, r *http.Request, b *bot.B
 		pollType = "regular"
 	}
 
+	isAnonymous := true
+	if anon := parseStringParam(r, "is_anonymous"); anon == "false" {
+		isAnonymous = false
+	}
+
+	// Parse media/explanation_media (Bot API 10.0+)
+	var media, explanationMedia *models.PollMedia
+	if m := parseStringParam(r, "media"); m != "" {
+		var pm models.PollMedia
+		if err := parseJSON(m, &pm); err == nil {
+			media = &pm
+		}
+	}
+	if em := parseStringParam(r, "explanation_media"); em != "" {
+		var pm models.PollMedia
+		if err := parseJSON(em, &pm); err == nil {
+			explanationMedia = &pm
+		}
+	}
+
+	// Parse members_only (Bot API 10.0)
+	membersOnly := parseStringParam(r, "members_only") == "true"
+
+	// Parse country_codes (Bot API 10.0)
+	var countryCodes []string
+	if cc := parseStringParam(r, "country_codes"); cc != "" {
+		_ = parseJSON(cc, &countryCodes)
+	}
+
 	poll := models.Poll{
 		ID:          models.RandomHex(8),
 		Question:    question,
 		Options:     pollOptions,
-		IsAnonymous: true,
+		IsAnonymous: isAnonymous,
 		Type:        pollType,
+		Media:          media,
+		ExplanationMedia: explanationMedia,
+		MembersOnly:     membersOnly,
+		CountryCodes:    countryCodes,
 	}
 
 	msg := s.store.StoreMessage(models.Message{
