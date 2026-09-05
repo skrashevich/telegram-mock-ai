@@ -368,3 +368,38 @@ func TestSendPhoto(t *testing.T) {
 func itoa(n int) string {
 	return fmt.Sprintf("%d", n)
 }
+
+// A request to /bot<token>/ (no method in the path) with the method name in the
+// JSON body must be dispatched -- api.telegram.org accepts this form and the
+// official "hellobot" PHP sample's apiRequestJson helper depends on it.
+func TestMethodInRequestBody(t *testing.T) {
+	ts, store, _ := setupTestServer()
+	defer ts.Close()
+
+	token := "123456:testtoken"
+	store.CreateUser(models.User{ID: 2001, FirstName: "Bob"})
+	store.CreateChat(models.Chat{ID: 2001, Type: "private"})
+
+	resp := doPost(t, ts.URL+"/bot"+token+"/",
+		`{"method": "sendMessage", "chat_id": 2001, "text": "via body"}`)
+	if !resp.OK {
+		t.Fatalf("expected ok=true, got %d: %s", resp.ErrorCode, resp.Description)
+	}
+
+	var msg models.Message
+	json.Unmarshal(resp.Result, &msg)
+	if msg.Text != "via body" {
+		t.Errorf("expected text 'via body', got '%s'", msg.Text)
+	}
+}
+
+// getMe via ?method= on the trailing-slash URL (query-string form).
+func TestMethodInQueryString(t *testing.T) {
+	ts, _, _ := setupTestServer()
+	defer ts.Close()
+
+	resp := doGet(t, ts.URL+"/bot123456:testtoken/?method=getMe")
+	if !resp.OK {
+		t.Fatalf("expected ok=true, got %d: %s", resp.ErrorCode, resp.Description)
+	}
+}
