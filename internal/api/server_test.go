@@ -368,3 +368,63 @@ func TestSendPhoto(t *testing.T) {
 func itoa(n int) string {
 	return fmt.Sprintf("%d", n)
 }
+
+// A request to /bot<token>/ (no method in the path) with the method name in the
+// JSON body must be dispatched -- api.telegram.org accepts this form and the
+// official "hellobot" PHP sample's apiRequestJson helper depends on it.
+func TestMethodInRequestBody(t *testing.T) {
+	ts, store, _ := setupTestServer()
+	defer ts.Close()
+
+	token := "123456:testtoken"
+	store.CreateUser(models.User{ID: 2001, FirstName: "Bob"})
+	store.CreateChat(models.Chat{ID: 2001, Type: "private"})
+
+	resp := doPost(t, ts.URL+"/bot"+token+"/",
+		`{"method": "sendMessage", "chat_id": 2001, "text": "via body"}`)
+	if !resp.OK {
+		t.Fatalf("expected ok=true, got %d: %s", resp.ErrorCode, resp.Description)
+	}
+
+	var msg models.Message
+	json.Unmarshal(resp.Result, &msg)
+	if msg.Text != "via body" {
+		t.Errorf("expected text 'via body', got '%s'", msg.Text)
+	}
+}
+
+// getMe via ?method= on the trailing-slash URL (query-string form).
+func TestMethodInQueryString(t *testing.T) {
+	ts, _, _ := setupTestServer()
+	defer ts.Close()
+
+	resp := doGet(t, ts.URL+"/bot123456:testtoken/?method=getMe")
+	if !resp.OK {
+		t.Fatalf("expected ok=true, got %d: %s", resp.ErrorCode, resp.Description)
+	}
+}
+
+// The 4096 limit is on characters, not UTF-8 bytes: a 3000-character Cyrillic
+// message (~6000 bytes) is valid, a 5000-character one is not.
+func TestSendMessageLengthIsCharacters(t *testing.T) {
+	ts, store, _ := setupTestServer()
+	defer ts.Close()
+
+	token := "123456:testtoken"
+	store.CreateUser(models.User{ID: 3001, FirstName: "Ann"})
+	store.CreateChat(models.Chat{ID: 3001, Type: "private"})
+
+	ok := doPost(t, ts.URL+"/bot"+token+"/sendMessage",
+		`{"chat_id": 3001, "text": "`+strings.Repeat("я", 3000)+`"}`)
+	if !ok.OK {
+		t.Fatalf("3000 Cyrillic chars must be accepted, got %d: %s", ok.ErrorCode, ok.Description)
+	}
+
+	tooLong := doPost(t, ts.URL+"/bot"+token+"/sendMessage",
+		`{"chat_id": 3001, "text": "`+strings.Repeat("я", 5000)+`"}`)
+	if tooLong.OK {
+		t.Error("5000 chars must be rejected")
+	} else if tooLong.ErrorCode != 400 {
+		t.Errorf("expected error_code 400, got %d", tooLong.ErrorCode)
+	}
+}

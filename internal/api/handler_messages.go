@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"time"
+	"unicode/utf8"
 
 	"github.com/skrashevich/telegram-mock-ai/internal/bot"
 	"github.com/skrashevich/telegram-mock-ai/internal/llm"
@@ -25,7 +26,10 @@ func (s *Server) handleSendMessage(w http.ResponseWriter, r *http.Request, b *bo
 		respondError(w, http.StatusBadRequest, "Bad Request: message text is empty")
 		return
 	}
-	if len(text) > 4096 {
+	// Telegram's 4096 limit is on characters (UTF-16 code units), not bytes, so
+	// a valid message in Cyrillic/CJK/emoji is well under the limit even when
+	// its UTF-8 byte length is not.
+	if utf8.RuneCountInString(text) > 4096 {
 		respondError(w, http.StatusBadRequest, "Bad Request: message is too long")
 		return
 	}

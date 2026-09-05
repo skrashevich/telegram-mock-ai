@@ -134,16 +134,28 @@ func (s *Server) handleBotRequest(w http.ResponseWriter, r *http.Request) {
 
 	rest := path[4:] // strip "/bot"
 	slashIdx := strings.Index(rest, "/")
+	var token, method string
 	if slashIdx < 0 {
-		respondError(w, http.StatusNotFound, "Not Found: method required")
-		return
+		token = rest
+	} else {
+		token = rest[:slashIdx]
+		method = rest[slashIdx+1:]
 	}
-
-	token := rest[:slashIdx]
-	method := rest[slashIdx+1:]
 
 	if token == "" {
 		respondError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	// api.telegram.org also accepts a request to /bot<token>/ with the method
+	// name supplied in the request body or query string instead of the path.
+	// The official "hellobot" PHP sample's apiRequestJson helper relies on this,
+	// so bots built on it (or copies of that helper) expect it to work.
+	if method == "" {
+		method = parseStringParam(r, "method")
+	}
+	if method == "" {
+		respondError(w, http.StatusNotFound, "Not Found: method required")
 		return
 	}
 
