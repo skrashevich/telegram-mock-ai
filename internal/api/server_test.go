@@ -403,3 +403,28 @@ func TestMethodInQueryString(t *testing.T) {
 		t.Fatalf("expected ok=true, got %d: %s", resp.ErrorCode, resp.Description)
 	}
 }
+
+// The 4096 limit is on characters, not UTF-8 bytes: a 3000-character Cyrillic
+// message (~6000 bytes) is valid, a 5000-character one is not.
+func TestSendMessageLengthIsCharacters(t *testing.T) {
+	ts, store, _ := setupTestServer()
+	defer ts.Close()
+
+	token := "123456:testtoken"
+	store.CreateUser(models.User{ID: 3001, FirstName: "Ann"})
+	store.CreateChat(models.Chat{ID: 3001, Type: "private"})
+
+	ok := doPost(t, ts.URL+"/bot"+token+"/sendMessage",
+		`{"chat_id": 3001, "text": "`+strings.Repeat("я", 3000)+`"}`)
+	if !ok.OK {
+		t.Fatalf("3000 Cyrillic chars must be accepted, got %d: %s", ok.ErrorCode, ok.Description)
+	}
+
+	tooLong := doPost(t, ts.URL+"/bot"+token+"/sendMessage",
+		`{"chat_id": 3001, "text": "`+strings.Repeat("я", 5000)+`"}`)
+	if tooLong.OK {
+		t.Error("5000 chars must be rejected")
+	} else if tooLong.ErrorCode != 400 {
+		t.Errorf("expected error_code 400, got %d", tooLong.ErrorCode)
+	}
+}
