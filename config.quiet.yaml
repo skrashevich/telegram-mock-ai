@@ -1,0 +1,53 @@
+# Quiet profile: Bot API stub with no LLM, no welcome burst, no proactive traffic.
+#
+# docker run --rm -p 8081:8081 -p 8082:8082 \
+#   -v "$PWD/config.quiet.yaml:/etc/telegram-mock-ai/config.yaml:ro" \
+#   -e TELEGRAM_MOCK_LLM_ENABLED=false \
+#   -e TELEGRAM_MOCK_WELCOME_ENABLED=false \
+#   -e TELEGRAM_MOCK_PROACTIVE_ENABLED=false \
+#   telegram-mock-ai
+#
+# Point your bot library at http://<mock-host>:8081/bot with token
+# 123456:QUIET-EVAL-TOKEN and allow user/chat id 900001.
+
+server:
+  host: "0.0.0.0"
+  port: 8081
+  read_timeout: 60s
+  write_timeout: 60s
+
+llm:
+  enabled: false
+
+welcome:
+  enabled: false
+
+proactive:
+  enabled: false
+
+seed:
+  generate:
+    enabled: false
+  users:
+    - id: 900001
+      first_name: "Eval"
+      username: "eval_user"
+  chats:
+    # Private chat id == user id (Telegram DM convention).
+    - id: 900001
+      type: "private"
+      title: "Eval"
+      members: [900001]
+  bots:
+    - token: "123456:QUIET-EVAL-TOKEN"
+      username: "quiet_eval_bot"
+      first_name: "Quiet Eval"
+
+log:
+  level: "info"
+  format: "text"
+
+admin:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8082

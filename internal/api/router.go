@@ -174,8 +174,9 @@ func (s *Server) handleBotRequest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// On first connection, trigger welcome messages
-	if s.registry.MarkConnected(token) {
+	// On first connection, optionally inject synthetic user messages into each chat.
+	// Disable via welcome.enabled / TELEGRAM_MOCK_WELCOME_ENABLED=false for deterministic eval.
+	if s.registry.MarkConnected(token) && s.cfg.Welcome.Enabled {
 		go s.sendWelcomeMessages(b)
 	}
 

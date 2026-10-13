@@ -13,10 +13,17 @@ type Config struct {
 	Server    ServerConfig    `yaml:"server"`
 	LLM       LLMConfig       `yaml:"llm"`
 	Proactive ProactiveConfig `yaml:"proactive"`
+	Welcome   WelcomeConfig   `yaml:"welcome"`
 	Webhook   WebhookConfig   `yaml:"webhook"`
 	Seed      SeedConfig      `yaml:"seed"`
 	Log       LogConfig       `yaml:"log"`
 	Admin     AdminConfig     `yaml:"admin"`
+}
+
+// WelcomeConfig controls auto-generated inbound messages when a bot first connects.
+// Disable for deterministic eval harnesses that inject their own inbound events.
+type WelcomeConfig struct {
+	Enabled bool `yaml:"enabled"`
 }
 
 // ServerConfig holds HTTP server settings.
@@ -152,6 +159,10 @@ func DefaultConfig() *Config {
 				{Type: "sticker_message", Weight: 0.1},
 			},
 		},
+		Welcome: WelcomeConfig{
+			// Default true keeps upstream behaviour; set false for quiet eval.
+			Enabled: true,
+		},
 		Webhook: WebhookConfig{
 			MaxRetries: 3,
 			RetryDelay: time.Second,
@@ -216,6 +227,9 @@ func applyEnvOverrides(cfg *Config) {
 	}
 	if v := os.Getenv("TELEGRAM_MOCK_PROACTIVE_ENABLED"); v != "" {
 		cfg.Proactive.Enabled = v == "true" || v == "1"
+	}
+	if v := os.Getenv("TELEGRAM_MOCK_WELCOME_ENABLED"); v != "" {
+		cfg.Welcome.Enabled = v == "true" || v == "1"
 	}
 	if v := os.Getenv("TELEGRAM_MOCK_LOG_LEVEL"); v != "" {
 		cfg.Log.Level = v

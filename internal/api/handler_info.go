@@ -79,8 +79,12 @@ func (s *Server) handleSendChatAction(w http.ResponseWriter, r *http.Request, b 
 	}
 
 	if _, exists := s.store.GetChat(chatID); !exists {
-		respondError(w, http.StatusBadRequest, "Bad Request: chat not found")
-		return
+		// Match sendMessage: auto-create a private chat so typing indicators
+		// before the first outbound text do not 400 during eval harness runs.
+		s.store.CreateChat(models.Chat{
+			ID:   chatID,
+			Type: "private",
+		})
 	}
 
 	respondBool(w, true)

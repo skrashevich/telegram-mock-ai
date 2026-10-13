@@ -50,6 +50,13 @@ proactive:
     - type: sticker_message
       weight: 0.1
 
+# On first Bot API call the mock can inject fake user messages into every chat
+# (immediate + burst over ~30s). Turn this off for deterministic CI / inject-only tests:
+#   welcome.enabled: false
+#   env: TELEGRAM_MOCK_WELCOME_ENABLED=false
+welcome:
+  enabled: true
+
 webhook:
   max_retries: 3
   retry_delay: 1s

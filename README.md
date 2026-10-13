@@ -395,9 +395,57 @@ These override values from `config.yaml`:
 | `TELEGRAM_MOCK_LLM_API_KEY` | API key |
 | `TELEGRAM_MOCK_LLM_MODEL` | Model name |
 | `TELEGRAM_MOCK_PROACTIVE_ENABLED` | Enable proactive mode |
+| `TELEGRAM_MOCK_WELCOME_ENABLED` | Inject fake user messages on first bot connect (`true`/`false`, default `true`) |
 | `TELEGRAM_MOCK_SEED_GENERATE_ENABLED` | Enable automatic seed generation |
 | `TELEGRAM_MOCK_LOG_LEVEL` | Log level: `debug`, `info`, `warn`, `error` |
 | `TELEGRAM_MOCK_ADMIN_PORT` | Admin API port (default: `8082`) |
+
+---
+
+## Quiet mode / inject-only testing
+
+For deterministic automated tests against a fake Bot API (you inject inbound events; the bot under test is the only writer of outbound messages):
+
+1. Disable LLM auto-replies, welcome burst, and proactive traffic.
+2. Seed one private DM (chat id = user id).
+3. Inject the user utterance via Admin API; capture bot replies from message history (`?from=bot` keeps only outbound bot messages — useful when the bot splits long answers into several `sendMessage` calls).
+
+```bash
+docker build -t telegram-mock-ai .
+docker run --rm -p 8081:8081 -p 8082:8082 \
+  -v "$PWD/config.quiet.yaml:/etc/telegram-mock-ai/config.yaml:ro" \
+  -e TELEGRAM_MOCK_LLM_ENABLED=false \
+  -e TELEGRAM_MOCK_WELCOME_ENABLED=false \
+  -e TELEGRAM_MOCK_PROACTIVE_ENABLED=false \
+  telegram-mock-ai
+```
+
+Point `python-telegram-bot` (or any client) at the mock:
+
+```python
+app = (
+    ApplicationBuilder()
+    .token("123456:QUIET-EVAL-TOKEN")
+    .base_url("http://localhost:8081/bot")
+    .build()
+)
+```
+
+```bash
+# Inject one user turn
+curl -X POST http://127.0.0.1:8082/api/chats/900001/messages \
+  -H 'Content-Type: application/json' \
+  -d '{"user_id": 900001, "text": "hello"}'
+
+# Read multi-message bot reply
+curl 'http://127.0.0.1:8082/api/chats/900001/messages?from=bot&limit=20'
+```
+
+See `config.quiet.yaml` for a ready quiet seed (user `900001`, token `123456:QUIET-EVAL-TOKEN`).
+
+### Welcome burst
+
+When `welcome.enabled` is `true` (default), the first Bot API call for a token schedules fake inbound messages into every chat the bot is in (one immediate, others over ~30s). Set `welcome.enabled: false` or `TELEGRAM_MOCK_WELCOME_ENABLED=false` to keep `getUpdates` empty until you inject.
 
 ---
 
@@ -415,7 +463,7 @@ Manage the mock server state. By default, it is available at `127.0.0.1:8082`.
 | `POST` | `/api/chats` | Create a chat |
 | `GET` | `/api/chats/{id}/members` | List chat members |
 | `POST` | `/api/chats/{id}/members` | Add a member |
-| `GET` | `/api/chats/{id}/messages` | Message history |
+| `GET` | `/api/chats/{id}/messages` | Message history (`?limit=`, optional `?from=bot\|user`) |
 | `POST` | `/api/chats/{id}/messages` | Inject a user message |
 | `GET` | `/api/bots` | List bots |
 | `POST` | `/api/bots/{token}/updates` | Inject an arbitrary Update |

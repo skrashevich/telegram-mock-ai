@@ -154,6 +154,16 @@ func (s *Store) GetMessage(chatID int64, messageID int) (*models.Message, bool) 
 
 // GetChatMessages returns the last N messages in a chat, ordered by message_id.
 func (s *Store) GetChatMessages(chatID int64, limit int) []models.Message {
+	return s.getChatMessages(chatID, limit, nil)
+}
+
+// GetChatMessagesBySender returns the last N messages from bots or non-bot
+// senders, ordered by message_id. Messages without From count as non-bot messages.
+func (s *Store) GetChatMessagesBySender(chatID int64, limit int, isBot bool) []models.Message {
+	return s.getChatMessages(chatID, limit, &isBot)
+}
+
+func (s *Store) getChatMessages(chatID int64, limit int, isBot *bool) []models.Message {
 	s.msgMu.RLock()
 	defer s.msgMu.RUnlock()
 	chatMsgs, ok := s.messages[chatID]
@@ -163,6 +173,9 @@ func (s *Store) GetChatMessages(chatID int64, limit int) []models.Message {
 	// Collect all message IDs and sort
 	all := make([]models.Message, 0, len(chatMsgs))
 	for _, m := range chatMsgs {
+		if isBot != nil && (m.From != nil && m.From.IsBot) != *isBot {
+			continue
+		}
 		all = append(all, *m)
 	}
 	// Sort by message_id descending, take limit, reverse

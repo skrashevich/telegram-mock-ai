@@ -203,7 +203,16 @@ func (a *AdminServer) handleListChatMessages(w http.ResponseWriter, r *http.Requ
 			limit = l
 		}
 	}
-	messages := a.store.GetChatMessages(chatID, limit)
+	var messages []models.Message
+	fromFilter := r.URL.Query().Get("from")
+	if fromFilter == "bot" || fromFilter == "user" {
+		messages = a.store.GetChatMessagesBySender(chatID, limit, fromFilter == "bot")
+		if messages == nil {
+			messages = []models.Message{}
+		}
+	} else {
+		messages = a.store.GetChatMessages(chatID, limit)
+	}
 	respondJSON(w, http.StatusOK, messages)
 }
 

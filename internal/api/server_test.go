@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/skrashevich/telegram-mock-ai/internal/api"
 	"github.com/skrashevich/telegram-mock-ai/internal/bot"
@@ -426,5 +427,96 @@ func TestSendMessageLengthIsCharacters(t *testing.T) {
 		t.Error("5000 chars must be rejected")
 	} else if tooLong.ErrorCode != 400 {
 		t.Errorf("expected error_code 400, got %d", tooLong.ErrorCode)
+	}
+}
+
+func setupServerWithConfig(cfg *config.Config) (*httptest.Server, *state.Store, *bot.Registry) {
+	store := state.NewStore()
+	registry := bot.NewRegistry(true)
+	webhookClient := webhook.NewClient(cfg.Webhook.Timeout, cfg.Webhook.MaxRetries, cfg.Webhook.RetryDelay)
+	dispatcher := updates.NewDispatcher(registry, webhookClient)
+	server := api.NewServer(cfg, store, registry, dispatcher, nil)
+	return httptest.NewServer(server.Handler()), store, registry
+}
+
+func TestWelcomeDisabledSkipsInboundOnConnect(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.LLM.Enabled = false
+	cfg.Welcome.Enabled = false
+
+	ts, store, registry := setupServerWithConfig(cfg)
+	defer ts.Close()
+
+	token := "123456:quiet"
+	user := store.CreateUser(models.User{ID: 5001, FirstName: "Eva"})
+	chat := store.CreateChat(models.Chat{ID: 5001, Type: "private", Title: "Eva"})
+	store.AddChatMember(chat.ID, user.ID, "member")
+
+	// First Bot API call marks connected; with welcome off nothing is queued.
+	me := doGet(t, ts.URL+"/bot"+token+"/getMe")
+	if !me.OK {
+		t.Fatalf("getMe failed: %s", me.Description)
+	}
+	b, ok := registry.Get(token)
+	if !ok {
+		t.Fatal("bot not registered")
+	}
+	store.AddChatMember(chat.ID, b.User.ID, "member")
+
+	time.Sleep(50 * time.Millisecond)
+
+	upd := doPost(t, ts.URL+"/bot"+token+"/getUpdates", `{}`)
+	if !upd.OK {
+		t.Fatalf("getUpdates failed: %s", upd.Description)
+	}
+	var updates []models.Update
+	if err := json.Unmarshal(upd.Result, &updates); err != nil {
+		t.Fatalf("unmarshal updates: %v", err)
+	}
+	if len(updates) != 0 {
+		t.Fatalf("expected no welcome updates with welcome.enabled=false, got %d", len(updates))
+	}
+}
+
+func TestSendChatActionCreatesMissingPrivateChat(t *testing.T) {
+	ts, store, _ := setupTestServer()
+	defer ts.Close()
+
+	token := "123456:typing"
+	chatID := int64(9001)
+	if _, exists := store.GetChat(chatID); exists {
+		t.Fatal("chat should not exist yet")
+	}
+
+	resp := doPost(t, ts.URL+"/bot"+token+"/sendChatAction",
+		fmt.Sprintf(`{"chat_id": %d, "action": "typing"}`, chatID))
+	if !resp.OK {
+		t.Fatalf("sendChatAction failed: %s", resp.Description)
+	}
+	if _, exists := store.GetChat(chatID); !exists {
+		t.Fatal("expected private chat to be auto-created")
+	}
+}
+
+func TestSetMyCommandsRoundTrip(t *testing.T) {
+	ts, _, _ := setupTestServer()
+	defer ts.Close()
+
+	token := "123456:cmds"
+	set := doPost(t, ts.URL+"/bot"+token+"/setMyCommands",
+		`{"commands": [{"command":"start","description":"Start"}]}`)
+	if !set.OK {
+		t.Fatalf("setMyCommands failed: %s", set.Description)
+	}
+	got := doGet(t, ts.URL+"/bot"+token+"/getMyCommands")
+	if !got.OK {
+		t.Fatalf("getMyCommands failed: %s", got.Description)
+	}
+	var cmds []models.BotCommand
+	if err := json.Unmarshal(got.Result, &cmds); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(cmds) != 1 || cmds[0].Command != "start" {
+		t.Fatalf("unexpected commands: %+v", cmds)
 	}
 }
